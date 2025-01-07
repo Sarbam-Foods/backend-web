@@ -29,7 +29,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['rioz9786.pythonanywhere.com/', '127.0.0.1', '192.168.1.14',]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -84,7 +84,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'sarbam_mail.wsgi.application'
 
-CORS_ALLOWED_ALL_ORIGINS = True
+# CORS_ALLOWED_ALL_ORIGINS = True
+CORS_ALLOWED_ORGINS = ['http://localhost:59615/']
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -96,11 +97,11 @@ DATABASES = {
     }
 }
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-    ]
-}
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         'rest_framework.authentication.SessionAuthentication',
+#     ]
+# }
 
 
 # Password validation

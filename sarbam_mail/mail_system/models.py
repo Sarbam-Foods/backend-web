@@ -2,14 +2,12 @@ from django.db import models
 
 # Create your models here.
 
-"""
-order_id
-total_amount
-address
-order_timestamp
+class Item(models.Model):
+   name = models.CharField(max_length=255)
+   price = models.FloatField()
+   quantity = models.IntegerField()
+   weight = models.FloatField()
+   description = models.TextField()
 
-
-item_name
-item_price
-item_quantity
-"""
+   def __str__(self):
+      return self.name
