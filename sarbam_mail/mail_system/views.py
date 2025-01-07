@@ -1,10 +1,11 @@
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils import timezone
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
 
 class PlaceOrderView(APIView):
    def post(self, request, *args, **kwargs):
@@ -15,23 +16,36 @@ class PlaceOrderView(APIView):
          customer_email = data.get('customer_email')
          address = data.get('address')
          total_amount = data.get('total_amount')
-         # items =  data.get('items')
+         items = data.get('item')
+         link = data.get('link')
 
+         print(items)
+            
+         order_date = timezone.now().date()
+
+         email_body = render_to_string('mail_template.html', {
+            'order_id': order_id,
+            'name': customer_name,
+            'email': customer_email,
+            'address': address,
+            'total_amount': total_amount,
+            'order_date': order_date,
+            'items': items,
+            'link': link,
+         })
 
          subject = f"Your order has been placed!"
-         message = (
-            f"Dear {customer_name},\n\n"
-            f"Your order details for Order ID: {order_id} have been placed successfully.\n"
-            f"Thank you for shopping with us!\n\n"
-            f"Address: {address}\n"
-            f"Total Amount: {total_amount}\n"
-            # f"Items: {', '.join(item['name'] for item in items)}\n\n"
-            f"Regards,\nSarbam Foods"
-         )
 
          from_email = settings.DEFAULT_FROM_EMAIL
 
-         send_mail(subject, message, from_email, [customer_email], fail_silently=False) # type: ignore
+         email = EmailMessage(
+            subject,
+            body = email_body,
+            from_email = from_email,
+            to = [customer_email],
+         )
+         email.content_subtype = 'html'
+         email.send()
 
          return Response(
             {'message': "Email Sent Successfully!"},
