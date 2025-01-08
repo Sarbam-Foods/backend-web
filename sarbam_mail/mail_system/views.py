@@ -28,17 +28,6 @@ class PlaceOrderView(APIView):
 
             order_date = timezone.now().date()
 
-            # email_body =  {
-            #     'order_id': order_id,
-            #     'name': customer_name,
-            #     'email': customer_email,
-            #     'address': address,
-            #     'total_amount': total_amount,
-            #     'order_date': order_date,
-            #     'items_list': items,
-            #     'link': link,
-            # }
-
             email_body = render_to_string('mail_template.html', {
                 'order_id': order_id,
                 'name': customer_name,
