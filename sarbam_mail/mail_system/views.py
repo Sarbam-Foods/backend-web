@@ -8,9 +8,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from django.http import HttpResponse
-
-
 class PlaceOrderView(APIView):
     def post(self, request, *args, **kwargs):
         try:
@@ -51,8 +48,6 @@ class PlaceOrderView(APIView):
             email.content_subtype = 'html'
             email.send()
 
-
-            # template = loader.get_template('mail_template.html')
 
             return Response(
                 {'message': "Email Sent Successfully!"},
