@@ -9,7 +9,6 @@ from django.contrib.auth.models import (
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-# Create your models here.
 class BaseUserModel(models.Model):
    created_at = models.DateTimeField(auto_now_add=True)
 
@@ -64,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
 
    address = models.TextField(max_length=500)
 
-   promocode = models.CharField(max_length=15, null=True, blank=True)
+   promocode = models.CharField(max_length=255, null=True, blank=True)
 
    is_active = models.BooleanField(default=True)
    is_staff = models.BooleanField(default=False)

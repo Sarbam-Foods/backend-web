@@ -100,7 +100,7 @@ class CartListAPIView(generics.ListAPIView):
       user = self.request.user
 
       if user.is_authenticated and user.is_superuser:
-         return Cart.objects.filter(user=user).select_related('user').prefetch_related('cart_items')
+         return Cart.objects.filter(user=user, checked_out=False).select_related('user').prefetch_related('cart_items')
       else:
          return Cart.objects.none()
       
@@ -109,7 +109,6 @@ class CartListAPIView(generics.ListAPIView):
 
 # CART AND CART ITEMS DELETE
 ############################
-
 
 class DeleteCartProductAPIView(generics.GenericAPIView):
    permission_classes = (IsAuthenticated,)

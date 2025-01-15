@@ -10,18 +10,26 @@ from accounts.models import User
 
 
 # Create your models here.
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
 class Category(models.Model):
-   category_name = models.CharField(max_length=155)
+    category_name = models.CharField(max_length=155)
 
-   def __str__(self):
-      return self.category_name
-   
-   class Meta:
-      verbose_name = "Category"
-      verbose_name_plural = "Categories"
+    def __str__(self):
+        return self.category_name
+    
+    class Meta:
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
 
 
-class Product(models.Model):
+class Product(BaseModel):
     name = models.CharField(max_length=255)
     photo = models.ImageField(
         upload_to='products/',
@@ -37,17 +45,17 @@ class Product(models.Model):
         return f"{self.name}_{self.category}"
 
 
-class Order(models.Model):
+class Order(BaseModel):
     order_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     total_amount = models.FloatField(validators=[MinValueValidator(0)])
-    created_at = models.DateTimeField(auto_now_add=True)
+    delivered = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Order_{self.order_id}"
     
 
-class OrderItem(models.Model):
+class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     qty = models.IntegerField(validators=[MinValueValidator(1)])
@@ -57,7 +65,7 @@ class OrderItem(models.Model):
         return f"{self.order}: {self.product.name}"
 
 
-class Cart(models.Model):
+class Cart(BaseModel):
     cart_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart')
     total_amount = models.FloatField(validators=[MinValueValidator(0)], default=0)
@@ -93,13 +101,13 @@ class Cart(models.Model):
             )
 
         self.checked_out = True
-        self.cart_items.all().delete()
         self.save()
 
         return order
 
 
-class CartProduct(models.Model):
+
+class CartProduct(BaseModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_products')
     qty = models.IntegerField(validators=[MinValueValidator(0)])
@@ -124,4 +132,3 @@ def update_cart_total_on_save(sender, instance, **kwargs):
 @receiver(post_delete, sender=CartProduct)
 def update_cart_total_on_delete(sender, instance, **kwargs):
     instance.cart.update_total_amount()
-

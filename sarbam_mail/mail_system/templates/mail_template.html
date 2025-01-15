@@ -52,12 +52,9 @@
 
       <div class="order-items my-4">
          <h5>Items Ordered:</h5>
-         {% for item in items_list %}
-            {{ item.name }}
-         {% endfor %}
 
-         <!-- <table class="table table-bordered order-table mx-auto"> -->
-            <!-- <thead>
+         <table class="table table-bordered order-table mx-auto">
+            <thead>
                 <tr>
                     <th>Item Name</th>
                     <th>Price (Rs.)</th>
@@ -75,7 +72,7 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table> -->
+        </table>
       </div>
 
       <div class="text-center mt-4 my-5">
