@@ -5,6 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
+from django.utils import timezone
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.conf import settings
+
 from django_filters.rest_framework import DjangoFilterBackend
 
 from mail_system.tasks import send_order_email_task
@@ -173,24 +178,58 @@ class PlaceOrderAPIView(generics.GenericAPIView):
          cart = Cart.objects.get(user=request.user, checked_out=False)
          order = cart.place_order()
 
-         order_items = [
-            {
-               "name": item.product.name,
-               "qty": int(item.qty),
-               "price": float(item.price),
-               "weight": item.product.weight
-            }
-            for item in order.order_items.all()
-         ]
+         # order_id = str(order.order_id)
+         # customer_name = order.user.name
+         # customer_email = order.user.email
+         # address = order.user.address
+         # total_amount = float(order.total_amount)
+         
+         # order_items = [
+         #    {
+         #       "name": item.product.name,
+         #       "qty": int(item.qty),
+         #       "price": float(item.price),
+         #       "weight": item.product.weight
+         #    }
+         #    for item in order.order_items.all()
+         # ] 
+ 
+         # items = order_items
 
-         send_order_email_task.delay(
-            order_id = str(order.order_id),
-            customer_name = order.user.name,
-            customer_email = order.user.email,
-            address = order.user.address,
-            total_amount = float(order.total_amount),
-            items = order_items,
-         )
+
+         # send_order_email_task.delay(
+         #    order_id = str(order.order_id),
+         #    customer_name = order.user.name,
+         #    customer_email = order.user.email,
+         #    address = order.user.address,
+         #    total_amount = float(order.total_amount),
+         #    items = order_items,
+         # )
+
+         order_date = timezone.now()
+
+         # email_body = render_to_string('mail_template.html',{
+         #    'order_id': order_id,
+         #    'name': customer_name,
+         #    'email': customer_email,
+         #    'address': address,
+         #    'total_amount': total_amount,
+         #    'order_date': order_date,
+         #    'items': items,
+         # })
+
+         # subject = "Your order has been placed!"
+         # from_email = settings.DEFAULT_FROM_EMAIL
+
+         # email = EmailMessage(
+         #    subject=subject,
+         #    body=email_body,
+         #    from_email=from_email,
+         #    to=[customer_email],
+         # )
+
+         # email.content_subtype = 'html'
+         # email.send()
 
          return Response(
                {"message": "Order placed successfully!", "order_id": str(order.order_id)},
