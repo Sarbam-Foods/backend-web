@@ -36,6 +36,7 @@ class Product(BaseModel):
         validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg'))],
         null=True, blank=True
     )
+    description = models.TextField(null=True, blank=True)
     price = models.FloatField(validators=[MinValueValidator(0)])
     qty = models.IntegerField(validators=[MinValueValidator(0)])
     weight = models.FloatField(validators=[MinValueValidator(0)])
@@ -84,9 +85,6 @@ class Cart(BaseModel):
         super().save(*args, **kwargs)
 
     def place_order(self):
-        if self.checked_out or not self.cart_items.exists():
-            raise ValueError("Cart is already checked out or empty.")
-
         order = Order.objects.create(
             user=self.user,
             total_amount=self.total_amount,
@@ -101,7 +99,8 @@ class Cart(BaseModel):
             )
 
         self.checked_out = True
-        self.save()
+        self.cart_items.all().delete()
+        self.delete()
 
         return order
 

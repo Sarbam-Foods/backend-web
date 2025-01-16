@@ -7,6 +7,8 @@ from rest_framework import status
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from mail_system.tasks import send_order_email_task
+
 from products.models import (
    Category,
    Product,
@@ -163,27 +165,49 @@ class DeleteCartAPIView(APIView):
       )
    
 
-class PlaceOrderAPIView(APIView):
-    permission_classes = (IsAuthenticated,)
+class PlaceOrderAPIView(generics.GenericAPIView):
+   permission_classes = (IsAuthenticated,)
 
-    def post(self, request, *args, **kwargs):
-        try:
-            cart = Cart.objects.get(user=request.user, checked_out=False)
-            order = cart.place_order()
-            return Response(
-                {"message": "Order placed successfully!", "order_id": str(order.order_id)},
-                status=status.HTTP_201_CREATED,
-            )
-        except Cart.DoesNotExist:
-            return Response({"error": "Active cart not found."}, status=status.HTTP_400_BAD_REQUEST)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+   def post(self, request, *args, **kwargs):
+      try:
+         cart = Cart.objects.get(user=request.user, checked_out=False)
+         order = cart.place_order()
+
+         order_items = [
+            {
+               "name": item.product.name,
+               "qty": int(item.qty),
+               "price": float(item.price),
+               "weight": item.product.weight
+            }
+            for item in order.order_items.all()
+         ]
+
+         send_order_email_task.delay(
+            order_id = str(order.order_id),
+            customer_name = order.user.name,
+            customer_email = order.user.email,
+            address = order.user.address,
+            total_amount = float(order.total_amount),
+            items = order_items,
+         )
+
+         return Response(
+               {"message": "Order placed successfully!", "order_id": str(order.order_id)},
+               status=status.HTTP_201_CREATED,
+         )
+      
+      except Cart.DoesNotExist:
+         return Response({"error": "Active cart not found."}, status=status.HTTP_400_BAD_REQUEST)
+      
+      except ValueError as e:
+         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
    
 class UserOrdersAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+   permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        orders = Order.objects.filter(user=request.user).select_related('user').order_by('-created_at')
-        serializer = OrderSerializer(orders, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+   def get(self, request):
+      orders = Order.objects.filter(user=request.user, delivered=False).select_related('user').order_by('-created_at')
+      serializer = OrderSerializer(orders, many=True)
+      return Response(serializer.data, status=status.HTTP_200_OK)

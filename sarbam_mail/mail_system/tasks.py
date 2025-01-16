@@ -6,7 +6,7 @@ from django.utils.timezone import now
 from django.conf import settings
 
 @shared_task
-def send_order_email_task(order_id, customer_name, customer_email, address, total_amount, items, link):
+def send_order_email_task(order_id, customer_name, customer_email, address, total_amount, items):
    try:
       order_date = now().date()
 
@@ -17,9 +17,9 @@ def send_order_email_task(order_id, customer_name, customer_email, address, tota
             'address': address,
             'total_amount': total_amount,
             'order_date': order_date,
-            'items_list': items,
-            'link': link,
-      })
+            'items': items,
+         }
+      )
 
       subject = "Your order has been placed!"
       from_email = settings.DEFAULT_FROM_EMAIL
