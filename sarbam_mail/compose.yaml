@@ -1,0 +1,66 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sarbam_foods:latest
+    container_name: sarbam_backend
+    ports:
+      - 8000:8000
+    expose:
+      - 8000
+    networks:
+      - postgres_network
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_USER=${DATABSE_USERNAME}
+    expose:
+      - 5432
+    env_file:
+      - .env
+    networks:
+      - postgres_network
+
+  redis:
+    image: redis:alpine
+    container_name: redis_container
+    restart: always
+    expose:
+      - 6379
+    networks:
+      - postgres_network
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sarbam_foods_celery:latest
+    container_name: celery_worker
+    command: celery -A sarbam_mail worker --loglevel=info
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - postgres_network
+
+
+volumes:
+  db_data:
+
+networks:
+  postgres_network:
+    driver: bridge

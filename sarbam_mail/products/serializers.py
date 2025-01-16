@@ -13,11 +13,11 @@ from products.models import (
 class CategorySerializer(serializers.ModelSerializer):
    class Meta:
       model = Category
-      fields = ('category_name',)
+      fields = ('id', 'category_name',)
 
 
 class ProductSerializer(serializers.ModelSerializer):
-   category = serializers.CharField(source='category.category_name', read_only=True)
+   category = CategorySerializer(read_only=True)
 
    class Meta:
       model = Product
