@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 
 from products.models import (
     Category,
@@ -13,21 +14,38 @@ from products.models import (
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    fields = ('product', 'qty', 'price')
+    fields = ('product', 'qty', 'price', 'status')
     readonly_fields = ('product', 'qty', 'price')
     can_delete = False
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'user', 'total_amount', 'created_at', 'delivered')
+    list_display = ('order_id', 'user', 'total_amount', 'status', 'status_colored', 'created_at')
     list_display_links = ('order_id', 'user', 'total_amount', 'created_at')
-    list_editable = ('delivered',)
-    list_filter = ('delivered',)
+    list_editable = ('status',)
     readonly_fields = ('order_id', 'user', 'total_amount', 'created_at')
-    ordering = ( 'delivered', '-created_at',)
+    ordering = ('-created_at',)
     inlines = (OrderItemInline,)
 
+    def status_colored(self, obj):
+        """
+        Render the status field with a background color based on its value.
+        """
+        if obj.status == "Placed":
+            color = "yellow"
+        elif obj.status == "Cancelled":
+            color = "red"
+        else:
+            color = "lime"
+        
+        return format_html(
+            '<span style="background-color: {}; padding: 5px; color: black; border-radius: 4px;">{}</span>',
+            color,
+            obj.status
+        )
+
+    status_colored.short_description = ""
 
 
 class ProductInline(admin.TabularInline):
@@ -37,12 +55,12 @@ class ProductInline(admin.TabularInline):
     readonly_fields = ('name', 'price', 'qty', 'weight', 'photo')
 
 
-# class CartProductInline(admin.TabularInline):
-#     model = CartProduct
-#     extra = 0
-#     fields = ('product', 'qty', 'subtotal')
-#     readonly_fields = ('product', 'qty', 'subtotal')
-#     can_delete = False
+class CartProductInline(admin.TabularInline):
+    model = CartProduct
+    extra = 0
+    fields = ('product', 'qty', 'subtotal')
+    readonly_fields = ('product', 'qty', 'subtotal')
+    can_delete = False
 
 
 @admin.register(Category)
@@ -71,5 +89,12 @@ class ProductAdmin(admin.ModelAdmin):
 
 # @admin.register(CartProduct)
 # class CartProductAdmin(admin.ModelAdmin):
-#     list_display = ('product', 'cart', 'qty', 'subtotal')
-#     list_display_links = ('product', 'cart', 'qty', 'subtotal')
+#     list_display = ('product', 'cart', 'qty', 'subtotal', 'status')
+#     list_display_links = ('product', 'cart', 'qty', 'subtotal', 'status')
+
+
+# @admin.register(OrderItem)
+# class OrderItem(admin.ModelAdmin):
+#     list_display = ('order', 'product', 'order__user', 'status')
+#     list_display_links = ('order', 'product', 'order__user')
+#     list_editable = ('status',)

@@ -21,16 +21,24 @@ class ProductSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = Product
-      fields = ('name', 'photo', 'description', 'price', 'qty', 'weight', 'category')
+      fields = ('id', 'name', 'photo', 'description', 'price', 'qty', 'weight', 'category')
+
+
+class ProductInCartSerializer(serializers.ModelSerializer):
+   category = CategorySerializer(read_only=True)
+
+   class Meta:
+      model = Product
+      fields = ('id', 'name', 'photo', 'description', 'price', 'weight', 'category')
 
 
 class CartProductSerializer(serializers.ModelSerializer):
-   product = ProductSerializer(read_only=True)
+   product = ProductInCartSerializer(read_only=True)
    cart = serializers.CharField(source = 'cart.user.name')
 
    class Meta:
       model = CartProduct
-      fields = ('id', 'cart', 'product', 'qty', 'subtotal')
+      fields = ('id', 'cart', 'product', 'qty', 'subtotal', 'status')
       read_only_fields = ('id', 'cart')
 
 
@@ -40,13 +48,14 @@ class CartSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = Cart
-      fields = ('user', 'total_amount', 'checked_out', 'cart_items')
+      fields = ('id', 'user', 'total_amount', 'checked_out', 'cart_items')
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+   product = ProductSerializer(read_only=True)
    class Meta:
       model = OrderItem
-      fields = ('product', 'qty', 'price')
+      fields = ('id', 'product', 'qty', 'price', 'status')
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -54,4 +63,4 @@ class OrderSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = Order
-      fields = ('order_id', 'total_amount', 'order_items', 'created_at', 'delivered')
+      fields = ('order_id', 'total_amount', 'order_items', 'status', 'created_at')

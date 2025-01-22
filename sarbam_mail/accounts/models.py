@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import (
    AbstractBaseUser,
    BaseUserManager,
@@ -56,38 +56,41 @@ class PromoCode(models.Model):
 
 
 class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
-   username = None
-   email = models.EmailField(unique=True)
-   name = models.CharField(max_length=255)
-   phone_number = PhoneNumberField()
+    username = None
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=255)
+    phone_number = PhoneNumberField()
 
-   address = models.TextField(max_length=500)
+    address = models.TextField(max_length=500)
 
-   promocode = models.CharField(max_length=255, null=True, blank=True)
+    promocode = models.ManyToManyField(PromoCode, null=True, blank=True, related_name='users')
 
-   is_active = models.BooleanField(default=True)
-   is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
 
-   objects = UserManager()
+    otp = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(100000), MaxValueValidator(999999)])
+    otp_expiry = models.DateTimeField(null=True, blank=True)
 
-   USERNAME_FIELD = "email"
-   REQUIRED_FIELDS = ['name']
+    objects = UserManager()
 
-   class Meta:
-      verbose_name = "User"
-      verbose_name_plural = "Users"
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ['name']
+
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
 
 
-   def __str__(self):
-      return f"{self.name}: {self.email}"
+    def __str__(self):
+        return f"{self.name}: {self.email}"
 
-   def save(self, *args, **kwargs):
-      super().save(*args, **kwargs) 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs) 
 
-   def has_perm(self, perm, obj=None):
-      """Check if the user has a specific permission."""
-      return True
+    def has_perm(self, perm, obj=None):
+        """Check if the user has a specific permission."""
+        return True
 
-   def has_module_perms(self, app_label):
-      """Check if the user has permissions to access the specified app."""
-      return True
+    def has_module_perms(self, app_label):
+        """Check if the user has permissions to access the specified app."""
+        return True

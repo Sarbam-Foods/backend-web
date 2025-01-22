@@ -50,10 +50,12 @@ class PromoAd(BaseModel):
    promo_response = models.TextField()
 
    def __str__(self):
-      return {self.promo_response}
+      return self.promo_response
    
 
 class About(models.Model):
+   main_text = models.TextField(max_length=500, null=True, blank=True)
+
    banner_photo = models.ImageField(upload_to='banner/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg'))])
    banner_photo2 = models.ImageField(upload_to='banner/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg'))])
 

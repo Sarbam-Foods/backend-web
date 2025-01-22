@@ -16,5 +16,5 @@ class UserAdmin(admin.ModelAdmin):
    list_display_links = ('name', 'email', 'phone_number')
    search_fields = ('name', 'email')
    list_filter = ('is_superuser',)
+   exclude = ('otp', 'otp_expiry', 'password', 'groups', 'user_permissions')
    readonly_fields = ('email', 'name', 'phone_number', 'address', 'last_login')
-   exclude = ('password',)

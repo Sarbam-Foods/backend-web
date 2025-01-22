@@ -5,14 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from django.utils import timezone
-from django.template.loader import render_to_string
-from django.core.mail import EmailMessage
-from django.conf import settings
+from mail_system.tasks import send_order_email_task
 
 from django_filters.rest_framework import DjangoFilterBackend
-
-from mail_system.tasks import send_order_email_task
 
 from products.models import (
    Category,
@@ -30,6 +25,8 @@ from products.serializers import (
    OrderSerializer,
 )
 
+from django_filters import rest_framework as filters
+
 
 # CATEGORY LIST VIEW
 ####################
@@ -42,17 +39,22 @@ class CategoryListAPIView(generics.ListAPIView):
 
 
 
-
 # PRODUCT LIST VIEW
 ####################
+class ProductFilter(filters.FilterSet):
+   category_name = filters.CharFilter(field_name='category__category_name', lookup_expr='iexact')
+
+   class Meta:
+      model = Product
+      fields = ['category_name']
+
 
 class ProductListAPIView(generics.ListAPIView):
    queryset = Product.objects.select_related('category').prefetch_related('cart_products')
    serializer_class = ProductSerializer
    filter_backends = (SearchFilter, DjangoFilterBackend)
    search_fields = ('name',)
-   filterset_fields = ('category',)
-
+   filterset_class = ProductFilter
 
 
 # ADD ITEM TO CART
@@ -78,7 +80,7 @@ class AddProductToCartAPIView(generics.GenericAPIView):
       cart, created = Cart.objects.get_or_create(user=user, checked_out=False)
 
       try:
-         cart_product = CartProduct.objects.get(cart=cart, product=product)
+         cart_product = CartProduct.objects.get(cart=cart, product=product, status="Pending")
          cart_product.qty += qty
          print('Cart Fetched!')
       
@@ -87,13 +89,18 @@ class AddProductToCartAPIView(generics.GenericAPIView):
          print("Cart Created!")
 
       cart_product.save()
+
       cart.update_total_amount()
       cart.save()
 
       return Response(
-         {'message': "Product added to cart successfully!"},
+         {
+            'id': cart_product.id,
+            'message': "Product added to cart successfully!"
+         },
          status=status.HTTP_201_CREATED
       )
+
 
 
 # CART VIEW FOR A USER
@@ -114,14 +121,14 @@ class CartListAPIView(generics.ListAPIView):
 
 
 
-# CART AND CART ITEMS DELETE
+# CART AND CART ITEMS STATUS
 ############################
 
-class DeleteCartProductAPIView(generics.GenericAPIView):
+class CancelCartProductAPIView(generics.GenericAPIView):
    permission_classes = (IsAuthenticated,)
    serializer_class = CartProductSerializer
 
-   def delete(self, request, product_id, *args, **kwargs):
+   def patch(self, request, product_id, *args, **kwargs):
       try:
          product = CartProduct.objects.select_related('cart').get(id = product_id)
       except CartProduct.DoesNotExist:
@@ -132,14 +139,15 @@ class DeleteCartProductAPIView(generics.GenericAPIView):
       
       if product.cart.user != request.user:
          return Response(
-            {'message': "You are not authorized to delete this item!"},
+            {'message': "You are not authorized to cancel this item!"},
             status=status.HTTP_401_UNAUTHORIZED
          )
       
-      product.delete()
+      product.status = "Cancelled"
+      product.save()
 
       return Response(
-         {'message': "Cart Item deleted successfully!"},
+         {'message': "Cart Item cancelled successfully!"},
          status=status.HTTP_204_NO_CONTENT
       )
 
@@ -170,6 +178,8 @@ class DeleteCartAPIView(APIView):
       )
    
 
+# ORDER PLACE
+############################
 class PlaceOrderAPIView(generics.GenericAPIView):
    permission_classes = (IsAuthenticated,)
 
@@ -178,61 +188,32 @@ class PlaceOrderAPIView(generics.GenericAPIView):
          cart = Cart.objects.get(user=request.user, checked_out=False)
          order = cart.place_order()
 
-         # order_id = str(order.order_id)
-         # customer_name = order.user.name
-         # customer_email = order.user.email
-         # address = order.user.address
-         # total_amount = float(order.total_amount)
-         
-         # order_items = [
-         #    {
-         #       "name": item.product.name,
-         #       "qty": int(item.qty),
-         #       "price": float(item.price),
-         #       "weight": item.product.weight
-         #    }
-         #    for item in order.order_items.all()
-         # ] 
- 
-         # items = order_items
+         order_items = [
+            {
+               "name": item.product.name,
+               "qty": int(item.qty),
+               "price": float(item.price),
+               "weight": item.product.weight
+            }
+            for item in order.order_items.all()
+         ]
 
+         send_order_email_task.delay(
+            order_id = str(order.order_id),
+            customer_name = order.user.name,
+            customer_email = order.user.email,
+            address = order.user.address,
+            total_amount = float(order.total_amount),
+            items = order_items,
+         )
 
-         # send_order_email_task.delay(
-         #    order_id = str(order.order_id),
-         #    customer_name = order.user.name,
-         #    customer_email = order.user.email,
-         #    address = order.user.address,
-         #    total_amount = float(order.total_amount),
-         #    items = order_items,
-         # )
-
-         order_date = timezone.now()
-
-         # email_body = render_to_string('mail_template.html',{
-         #    'order_id': order_id,
-         #    'name': customer_name,
-         #    'email': customer_email,
-         #    'address': address,
-         #    'total_amount': total_amount,
-         #    'order_date': order_date,
-         #    'items': items,
-         # })
-
-         # subject = "Your order has been placed!"
-         # from_email = settings.DEFAULT_FROM_EMAIL
-
-         # email = EmailMessage(
-         #    subject=subject,
-         #    body=email_body,
-         #    from_email=from_email,
-         #    to=[customer_email],
-         # )
-
-         # email.content_subtype = 'html'
-         # email.send()
+         serializer = OrderSerializer(order)
 
          return Response(
-               {"message": "Order placed successfully!", "order_id": str(order.order_id)},
+               {
+                  "message": "Order placed successfully!",
+                  "order": serializer.data
+               },
                status=status.HTTP_201_CREATED,
          )
       
@@ -242,11 +223,29 @@ class PlaceOrderAPIView(generics.GenericAPIView):
       except ValueError as e:
          return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-   
-class UserOrdersAPIView(APIView):
+
+
+# ORDER AND ORDER ITEMS
+#################################
+
+class CancelOrderAPIView(generics.GenericAPIView):
+   permission_classes = (IsAuthenticated,)
+
+   def patch(self, request, order_id, *args, **kwargs):
+      pass
+
+
+class CancelOrderItemAPIView(generics.GenericAPIView):
+   permission_classes = (IsAuthenticated,)
+
+   def patch(self, request, order_item_id, *args, **kwargs):
+      pass
+
+
+class UserOrdersAPIView(generics.GenericAPIView):
    permission_classes = [IsAuthenticated]
 
    def get(self, request):
-      orders = Order.objects.filter(user=request.user, delivered=False).select_related('user').order_by('-created_at')
+      orders = Order.objects.filter(user=request.user).select_related('user').order_by('-created_at')
       serializer = OrderSerializer(orders, many=True)
       return Response(serializer.data, status=status.HTTP_200_OK)

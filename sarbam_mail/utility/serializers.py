@@ -23,4 +23,4 @@ class PromoAdSerializer(serializers.ModelSerializer):
 class AboutSerializer(serializers.ModelSerializer):
    class Meta:
       model = About
-      fields = ('banner_photo', 'banner_photo2', 'text1', 'text2', 'photo1', 'photo2')
+      fields = ('main_text', 'banner_photo', 'banner_photo2', 'text1', 'text2', 'photo1', 'photo2')
