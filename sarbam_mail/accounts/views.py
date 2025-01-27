@@ -25,8 +25,10 @@ from .serializers import (
     ChangePasswordSerializer,
     UpdateUserSerializer,
     UserSerializer,
+    AddressSerializer,
+    UserActivePromoCodeSerializer
 )
-from .models import User
+from .models import User, Address, PromoCode
 
 
 class LoginAPIView(APIView):
@@ -107,7 +109,7 @@ class ChangePasswordAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ResetPasswordRequestAPIView(generics.CreateAPIView):
+class ResetPasswordRequestAPIView(generics.GenericAPIView):
 
     def post(self, request):
         email = request.data.get('email')
@@ -189,7 +191,7 @@ class ValidateOTPView(APIView):
 
 
 
-class ResetPasswordView(APIView):
+class ResetPasswordView(generics.GenericAPIView):
     def post(self, request, uid, token):
         
         pk = urlsafe_base64_decode(uid).decode()
@@ -278,3 +280,122 @@ class UpdateUserAPIView(generics.GenericAPIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+
+
+class UserAddressCreateAPIView(generics.GenericAPIView):
+    queryset = Address.objects.all()
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AddressSerializer
+
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+
+        data = request.data.copy()
+        data['user'] = user.id
+
+        serializer = self.get_serializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {'message': "Address added successfully!"},
+                status=status.HTTP_201_CREATED
+            )
+        else:
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+
+class UserAddressAPIView(generics.GenericAPIView):
+    queryset = Address.objects.prefetch_related('user').all()
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AddressSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            addresses = Address.objects.prefetch_related('user').filter(user=user)
+        except Address.DoesNotExist:
+            return Response(
+                {'No Addresses listed for the user!'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        
+        serializer = self.get_serializer(addresses, many=True, read_only=True)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+
+
+class UserAddressUpdateAPIView(generics.GenericAPIView):
+    queryset = Address.objects.all()
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AddressSerializer
+
+    def get(self, request, address_id, *args, **kwargs):
+        user = request.user
+
+        try:
+            address = Address.objects.get(user=user, id=address_id)
+        except Address.DoesNotExist:
+            return Response(
+                {'message': "No Address found or the address doesn't belong to the user"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = self.get_serializer(address, read_only=True)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+    
+
+    def patch(self, request, address_id, *args, **kwargs):
+        user = request.user
+
+        try:
+            address = Address.objects.get(user=user, id=address_id)
+        except Address.DoesNotExist:
+            return Response(
+                {'message': "No Address found or the address doesn't belong to the user"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = self.get_serializer(address, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    
+    def delete(self, request, address_id, *args, **kwargs):
+        user = request.user
+
+        try:
+            address = Address.objects.get(user=user, id=address_id)
+        except Address.DoesNotExist:
+            return Response(
+                {'message': "No Address found or the address doesn't belong to the user"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        address.delete()
+
+        return Response(
+            {'message': "Address deleted successfully!"},
+            status = status.HTTP_204_NO_CONTENT
+        )
+    

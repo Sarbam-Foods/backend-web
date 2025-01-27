@@ -17,4 +17,7 @@ urlpatterns = [
 
    path('order/<int:order_id>/cancel/', views.CancelOrderAPIView.as_view(), name='order_cancel'),
    path('order/item/<int:order_item_id>/cancel/', views.CancelOrderItemAPIView.as_view(), name='order_item_cancel'),
+
+   path('deals/combo/', views.ComboDealsAPIView.as_view(), name='combo_deals'),
+   path('deals/hot/', views.HotDealsAPIView.as_view(), name='hot_deals'),
 ]  

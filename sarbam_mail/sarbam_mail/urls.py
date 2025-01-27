@@ -19,10 +19,6 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
 from rest_framework import permissions
 
 from drf_yasg.views import get_schema_view
@@ -45,9 +41,6 @@ urlpatterns = [
     path('mail/', include('mail_system.urls')),
 
     path('api-auth/', include('rest_framework.urls')),
-
-    # path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    # path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('accounts/', include('accounts.urls')),
     path('api/v1/', include('products.urls')),

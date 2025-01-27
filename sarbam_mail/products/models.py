@@ -2,11 +2,11 @@ import uuid
 
 from django.db.models import Sum
 from django.db import models
-from django.core.validators import FileExtensionValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator, MaxValueValidator
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from accounts.models import User
+from accounts.models import User, Address
 
 
 # Create your models here.
@@ -59,6 +59,7 @@ class Order(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     total_amount = models.FloatField(validators=[MinValueValidator(0)])
     status = models.CharField(choices=ORDER_STATUS, default="PENDING")
+    address = models.ForeignKey(Address, null=True,  on_delete=models.CASCADE, related_name='order_address')
 
     def __str__(self):
         return f"Order_{self.order_id}"
@@ -85,6 +86,7 @@ class Cart(BaseModel):
     cart_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart')
     total_amount = models.FloatField(validators=[MinValueValidator(0)], default=0)
+    address = models.ForeignKey(Address, null=True, blank=True, on_delete=models.CASCADE, related_name='cart_address')
     checked_out = models.BooleanField(default=False)
 
     def __str__(self):
@@ -112,6 +114,7 @@ class Cart(BaseModel):
         order = Order.objects.create(
             user=self.user,
             total_amount=self.total_amount,
+            address = self.address,
             status = "Placed"
         )
 
@@ -167,3 +170,121 @@ def update_cart_total_on_save(sender, instance, **kwargs):
 @receiver(post_delete, sender=CartProduct)
 def update_cart_total_on_delete(sender, instance, **kwargs):
     instance.cart.update_total_amount()
+
+
+
+class ComboDeal(models.Model):
+    combo_id = models.CharField(unique=True, primary_key=True, editable=False)
+
+    name = models.CharField(max_length=125)
+    photo = models.ImageField(upload_to='combo_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
+
+    original_price = models.FloatField(null=True, blank=True, default=0)
+    discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    discounted_price = models.FloatField(null=True, blank=True, default=0)
+
+    description = models.CharField(null=True, blank=True)
+
+    weight = models.FloatField(default=0, editable=False)
+
+
+    def calculate_price(self):
+        return sum(product.product.price for product in self.combo_deal.all())
+
+
+    def calculate_weight(self):
+        return sum(product.product.weight for product in self.combo_deal.all())
+
+
+    def save(self, *args, **kwargs):
+        if not self.combo_id:
+            latest_combo = ComboDeal.objects.order_by('-combo_id').first()
+            if latest_combo:
+                latest_id = int(latest_combo.combo_id.split('_')[1])
+                count = latest_id + 1
+                self.combo_id = f"COMBO_{count:05d}"
+            else:
+                self.combo_id = "COMBO_00001"
+
+        self.original_price = self.calculate_price()
+        self.weight = self.calculate_weight()
+         
+        self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
+
+        super().save(*args, **kwargs)
+    
+
+    def __str__(self):
+        return self.combo_id
+    
+
+
+class ComboProducts(models.Model):
+    combo_deal_id = models.ForeignKey(ComboDeal, on_delete=models.CASCADE, related_name='combo_deal')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='combo_product')
+
+    def __str__(self):
+        return f"{self.combo_deal_id}: {self.product}"
+    
+    class Meta:
+        verbose_name = "Product"
+        verbose_name_plural = "Combo Products"
+
+
+
+class HotDeal(models.Model):
+    hot_deal_id = models.CharField(unique=True, primary_key=True, editable=False)
+
+    name = models.CharField(max_length=125)
+    photo = models.ImageField(upload_to='hot_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
+
+    original_price = models.FloatField(null=True, blank=True, default=0)
+    discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    discounted_price = models.FloatField(null=True, blank=True, default=0)
+
+    description = models.CharField(null=True, blank=True)
+
+    weight = models.FloatField(default=0, editable=False)
+
+
+    def calculate_price(self):
+        return sum(product.product.price for product in self.hot_deal.all())
+
+
+    def calculate_weight(self):
+        return sum(product.product.weight for product in self.hot_deal.all())
+
+
+    def save(self, *args, **kwargs):
+        if not self.combo_id:
+            latest_combo = HotDeal.objects.order_by('-hot_deal_id').first()
+            if latest_combo:
+                latest_id = int(latest_combo.combo_id.split('_')[1])
+                count = latest_id + 1
+                self.combo_id = f"HOT_{count:05d}"
+            else:
+                self.combo_id = "HOT_00001"
+
+        self.original_price = self.calculate_price()
+        self.weight = self.calculate_weight()
+         
+        self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
+
+        super().save(*args, **kwargs)
+    
+
+    def __str__(self):
+        return self.combo_id
+    
+
+
+class HotDealProducts(models.Model):
+    hot_deal_id = models.ForeignKey(HotDeal, on_delete=models.CASCADE, related_name='hot_deal')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='hot_product')
+
+    def __str__(self):
+        return f"{self.hot_deal_id}: {self.product}"
+    
+    class Meta:
+        verbose_name = "Product"
+        verbose_name_plural = "Hot Deal Products"

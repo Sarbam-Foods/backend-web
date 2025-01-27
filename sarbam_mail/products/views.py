@@ -1,7 +1,7 @@
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -15,6 +15,8 @@ from products.models import (
    CartProduct,
    Cart,
    Order,
+   ComboDeal,
+   HotDeal
 )
 
 from products.serializers import (
@@ -23,6 +25,8 @@ from products.serializers import (
    CartProductSerializer,
    CartSerializer,
    OrderSerializer,
+   ComboDealSerializer,
+   HotDealSerializer,
 )
 
 from django_filters import rest_framework as filters
@@ -202,7 +206,7 @@ class PlaceOrderAPIView(generics.GenericAPIView):
             order_id = str(order.order_id),
             customer_name = order.user.name,
             customer_email = order.user.email,
-            address = order.user.address,
+            address = order.address,
             total_amount = float(order.total_amount),
             items = order_items,
          )
@@ -232,7 +236,23 @@ class CancelOrderAPIView(generics.GenericAPIView):
    permission_classes = (IsAuthenticated,)
 
    def patch(self, request, order_id, *args, **kwargs):
-      pass
+      user = request.user
+
+      try:
+         order = Order.objects.get(user=user, order_id=order_id)
+      except Order.DoesNotExist:
+         return Response(
+            {'message': "No such order exists!"},
+            status=status.HTTP_404_NOT_FOUND
+         )
+      
+      order.status = "Cancelled"
+      order.save()
+
+      return Response(
+         {"message": "Order cancelled successfully!"},
+         status=status.HTTP_200_OK
+      )
 
 
 class CancelOrderItemAPIView(generics.GenericAPIView):
@@ -248,4 +268,29 @@ class UserOrdersAPIView(generics.GenericAPIView):
    def get(self, request):
       orders = Order.objects.filter(user=request.user).select_related('user').order_by('-created_at')
       serializer = OrderSerializer(orders, many=True)
+      return Response(serializer.data, status=status.HTTP_200_OK)
+   
+
+
+class ComboDealsAPIView(generics.GenericAPIView):
+   queryset = ComboDeal.objects.prefetch_related('combo_deal').all()
+   permission_classes = (AllowAny,)
+   serializer_class = ComboDealSerializer
+
+   def get(self, request, *args, **kwargs):
+      combo_deals = self.get_queryset()
+      serializer = self.get_serializer(combo_deals, many=True)
+
+      return Response(serializer.data, status=status.HTTP_200_OK)
+   
+
+class HotDealsAPIView(generics.GenericAPIView):
+   queryset = HotDeal.objects.prefetch_related('combo_deal').all()
+   permission_classes = (AllowAny,)
+   serializer_class = HotDealSerializer
+
+   def get(self, request, *args, **kwargs):
+      hot_deals = self.get_queryset()
+      serializer = self.get_serializer(hot_deals, many=True)
+
       return Response(serializer.data, status=status.HTTP_200_OK)

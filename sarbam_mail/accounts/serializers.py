@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, PromoCode
+from .models import User, PromoCode, Address
 from django.contrib.auth.password_validation import validate_password
 
 
@@ -10,7 +10,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = User
-      fields = ['email', 'name', 'phone_number', 'address', 'promocode', 'password', 'confirm_password']
+      fields = ['email', 'name', 'phone_number', 'promocode', 'password', 'confirm_password']
       extra_kwargs = {'password': {'write_only': True}, 'confirm_password': {'write_only': True}}
 
    def validate(self, data):
@@ -46,17 +46,27 @@ class UserActivePromoCodeSerializer(serializers.ModelSerializer):
    class Meta:
       model = PromoCode
       fields = ('id', 'code', 'discount')
+
+
+class AddressSerializer(serializers.ModelSerializer):
+   class Meta:
+      model = Address
+      fields = ('id', 'user', 'province', 'district', 'municipality', 'location')
    
 
 class FetchUserSerializer(serializers.ModelSerializer):
    promocode = UserActivePromoCodeSerializer(many=True, read_only=True, source='promocode.all')
-   
+   address = AddressSerializer(many=True, read_only=True)
+
    class Meta:
       model = User
       fields = ('id', 'name', 'email', 'phone_number', 'address', 'promocode')
 
 
+
 class UserSerializer(serializers.ModelSerializer):   
+   address = AddressSerializer(read_only=True, many=True)
+
    class Meta:
       model = User
       fields = ('id', 'name', 'email', 'phone_number', 'address')
@@ -65,4 +75,4 @@ class UserSerializer(serializers.ModelSerializer):
 class UpdateUserSerializer(serializers.ModelSerializer):
    class Meta:
       model = User
-      fields = ('name', 'phone_number', 'address')
+      fields = ('user', 'name', 'phone_number', 'address')

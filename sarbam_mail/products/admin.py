@@ -7,7 +7,11 @@ from products.models import (
     Order,
     OrderItem,
     Cart,
-    CartProduct
+    CartProduct,
+    ComboDeal,
+    ComboProducts,
+    HotDeal,
+    HotDealProducts,
 )
 
 
@@ -21,8 +25,8 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'user', 'total_amount', 'status', 'status_colored', 'created_at')
-    list_display_links = ('order_id', 'user', 'total_amount', 'created_at')
+    list_display = ('order_id', 'user', 'total_amount', 'address', 'status', 'status_colored', 'created_at')
+    list_display_links = ('order_id', 'user', 'total_amount', 'address', 'created_at')
     list_editable = ('status',)
     readonly_fields = ('order_id', 'user', 'total_amount', 'created_at')
     ordering = ('-created_at',)
@@ -78,23 +82,29 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
-# @admin.register(Cart)
-# class CartAdmin(admin.ModelAdmin):
-#     list_display = ('cart_id', 'user', 'total_amount', 'checked_out')
-#     list_display_links = ('cart_id', 'user', 'total_amount', 'checked_out')
-#     ordering = ('checked_out', '-created_at')
-#     list_filter = ('checked_out',)
-#     inlines = (CartProductInline,)
+class ComboProductsInline(admin.TabularInline):
+    model = ComboProducts
+    extra = 0
+    fields = ('product',)
+    can_delete = True
 
 
-# @admin.register(CartProduct)
-# class CartProductAdmin(admin.ModelAdmin):
-#     list_display = ('product', 'cart', 'qty', 'subtotal', 'status')
-#     list_display_links = ('product', 'cart', 'qty', 'subtotal', 'status')
+@admin.register(ComboDeal)
+class ComboDealAdmin(admin.ModelAdmin):
+    list_display = ('name', 'weight', 'original_price', 'discounted_price')
+    list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
+    inlines = (ComboProductsInline,)
 
 
-# @admin.register(OrderItem)
-# class OrderItem(admin.ModelAdmin):
-#     list_display = ('order', 'product', 'order__user', 'status')
-#     list_display_links = ('order', 'product', 'order__user')
-#     list_editable = ('status',)
+class HotProductsInline(admin.TabularInline):
+    model = HotDealProducts
+    extra = 0
+    fields = ('product',)
+    can_delete = True
+
+
+@admin.register(HotDeal)
+class HotDealAdmin(admin.ModelAdmin):
+    list_display = ('name', 'weight', 'original_price', 'discounted_price')
+    list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
+    inlines = (HotProductsInline,)

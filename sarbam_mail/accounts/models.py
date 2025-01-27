@@ -47,6 +47,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
     
 
+
 class PromoCode(models.Model):
     code = models.CharField(unique=True, max_length=15)
     discount = models.FloatField(validators=[MinValueValidator(0)])
@@ -55,13 +56,12 @@ class PromoCode(models.Model):
         return f"{self.code}"
 
 
+
 class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     username = None
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
     phone_number = PhoneNumberField()
-
-    address = models.TextField(max_length=500)
 
     promocode = models.ManyToManyField(PromoCode, null=True, blank=True, related_name='users')
 
@@ -94,3 +94,15 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     def has_module_perms(self, app_label):
         """Check if the user has permissions to access the specified app."""
         return True
+    
+
+
+class Address(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='address')
+    province = models.CharField(max_length=55)
+    district = models.CharField(max_length=55)
+    municipality = models.CharField(max_length=155)
+    location = models.CharField(max_length=455, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.name}: {self.id}"
