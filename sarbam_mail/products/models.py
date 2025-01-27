@@ -58,7 +58,7 @@ class Order(BaseModel):
     order_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     total_amount = models.FloatField(validators=[MinValueValidator(0)])
-    status = models.CharField(choices=ORDER_STATUS, default="PENDING")
+    status = models.CharField(max_length=30, choices=ORDER_STATUS, default="PENDING")
     address = models.ForeignKey(Address, null=True,  on_delete=models.CASCADE, related_name='order_address')
 
     def __str__(self):
@@ -76,7 +76,7 @@ class OrderItem(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     qty = models.IntegerField(validators=[MinValueValidator(1)])
     price = models.FloatField(validators=[MinValueValidator(0)])
-    status = models.CharField(choices=PRODUCT_STATUS, default='PLACED')
+    status = models.CharField(max_length=30,choices=PRODUCT_STATUS, default='PLACED')
 
     def __str__(self):
         return f"{self.order}: {self.product.name}"
@@ -146,7 +146,7 @@ class CartProduct(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_products')
     qty = models.IntegerField(validators=[MinValueValidator(0)])
     subtotal = models.FloatField(default=0, validators=[MinValueValidator(0)])
-    status = models.CharField(choices=PRODUCT_STATUS, default="Pending")
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
 
     def __str__(self):
         return f"{self.cart}: {self.product}"
@@ -174,7 +174,7 @@ def update_cart_total_on_delete(sender, instance, **kwargs):
 
 
 class ComboDeal(models.Model):
-    combo_id = models.CharField(unique=True, primary_key=True, editable=False)
+    combo_id = models.CharField(unique=True, primary_key=True, editable=False, max_length=20)
 
     name = models.CharField(max_length=125)
     photo = models.ImageField(upload_to='combo_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
@@ -183,7 +183,7 @@ class ComboDeal(models.Model):
     discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     discounted_price = models.FloatField(null=True, blank=True, default=0)
 
-    description = models.CharField(null=True, blank=True)
+    description = models.CharField(max_length=200, blank=True, default="")
 
     weight = models.FloatField(default=0, editable=False)
 
@@ -233,7 +233,7 @@ class ComboProducts(models.Model):
 
 
 class HotDeal(models.Model):
-    hot_deal_id = models.CharField(unique=True, primary_key=True, editable=False)
+    hot_deal_id = models.CharField(max_length=125,unique=True, primary_key=True, editable=False)
 
     name = models.CharField(max_length=125)
     photo = models.ImageField(upload_to='hot_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
@@ -242,7 +242,7 @@ class HotDeal(models.Model):
     discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     discounted_price = models.FloatField(null=True, blank=True, default=0)
 
-    description = models.CharField(null=True, blank=True)
+    description = models.CharField(max_length=200, default="", blank=True)
 
     weight = models.FloatField(default=0, editable=False)
 
