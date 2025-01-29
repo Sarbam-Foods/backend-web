@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, PromoCode, Address
+from .models import User, PromoCode
 from django.contrib.auth.password_validation import validate_password
 
 
@@ -48,15 +48,14 @@ class UserActivePromoCodeSerializer(serializers.ModelSerializer):
       fields = ('id', 'code', 'discount')
 
 
-class AddressSerializer(serializers.ModelSerializer):
-   class Meta:
-      model = Address
-      fields = ('id', 'user', 'province', 'district', 'municipality', 'location')
+# class AddressSerializer(serializers.ModelSerializer):
+#    class Meta:
+#       model = Address
+#       fields = ('id', 'user', 'province', 'district', 'municipality', 'location')
    
 
 class FetchUserSerializer(serializers.ModelSerializer):
    promocode = UserActivePromoCodeSerializer(many=True, read_only=True, source='promocode.all')
-   address = AddressSerializer(many=True, read_only=True)
 
    class Meta:
       model = User
@@ -65,7 +64,6 @@ class FetchUserSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):   
-   address = AddressSerializer(read_only=True, many=True)
 
    class Meta:
       model = User
@@ -75,4 +73,4 @@ class UserSerializer(serializers.ModelSerializer):
 class UpdateUserSerializer(serializers.ModelSerializer):
    class Meta:
       model = User
-      fields = ('user', 'name', 'phone_number', 'address')
+      fields = ('name', 'phone_number', 'address')

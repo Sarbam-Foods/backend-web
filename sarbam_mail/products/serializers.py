@@ -8,9 +8,7 @@ from products.models import (
    Order,
    OrderItem,
    ComboDeal,
-   ComboProducts,
    HotDeal,
-   HotDealProducts,
 )
 
 
@@ -28,6 +26,7 @@ class ProductSerializer(serializers.ModelSerializer):
       fields = ('id', 'name', 'photo', 'description', 'price', 'qty', 'weight', 'category')
 
 
+
 class ProductInCartSerializer(serializers.ModelSerializer):
    category = CategorySerializer(read_only=True)
 
@@ -38,11 +37,10 @@ class ProductInCartSerializer(serializers.ModelSerializer):
 
 class CartProductSerializer(serializers.ModelSerializer):
    product = ProductInCartSerializer(read_only=True)
-   cart = serializers.CharField(source = 'cart.user.name')
 
    class Meta:
       model = CartProduct
-      fields = ('id', 'cart', 'product', 'qty', 'subtotal', 'status')
+      fields = ('id', 'product', 'qty', 'subtotal', 'status')
       read_only_fields = ('id', 'cart')
 
 
@@ -52,7 +50,7 @@ class CartSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = Cart
-      fields = ('id', 'user', 'total_amount', 'checked_out', 'cart_items')
+      fields = ('id', 'user', 'total_amount', 'address', 'checked_out', 'cart_items')
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -67,7 +65,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = Order
-      fields = ('order_id', 'total_amount', 'order_items', 'order', 'status', 'created_at')
+      fields = ('order_id', 'total_amount', 'order_items', 'status', 'coupon_id', 'isCouponApplied', 'created_at')
 
 
 class ProductInComboSerializer(serializers.ModelSerializer):
@@ -76,33 +74,18 @@ class ProductInComboSerializer(serializers.ModelSerializer):
       fields = ('id', 'name', 'photo', 'price', 'weight')
 
 
-class ComboProductSerializer(serializers.ModelSerializer):
-   product = ProductInComboSerializer(read_only=True)
-   
-   class Meta:
-      model = ComboProducts
-      fields = ('product',)
 
 
 class ComboDealSerializer(serializers.ModelSerializer):
-   combo_deal = ComboProductSerializer(read_only=True, many=True)
 
    class Meta:
       model = ComboDeal
       fields = ('combo_id', 'name', 'photo', 'combo_deal', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
 
 
-class HotDealProductSerializer(serializers.ModelSerializer):
-   product = ProductInComboSerializer(read_only=True)
-   
-   class Meta:
-      model = HotDealProducts
-      fields = ('product',)
-
 
 class HotDealSerializer(serializers.ModelSerializer):
-   hot_deal = ComboProductSerializer(read_only=True, many=True)
 
    class Meta:
       model = HotDeal
-      fields = ('hot_deal_id', 'name', 'photo', 'hot_deal', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
+      fields = ('hot_id', 'name', 'photo', 'hot_deal', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')

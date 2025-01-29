@@ -31,7 +31,7 @@ class ImageCarousel(models.Model):
    image3 = models.ImageField(upload_to='carousel/', null=True, blank=True, validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg'))])
 
    def __str__(self):
-      return "Image Carousel"
+      return "Edit your Carousel"
    
    def save(self, *args, **kwargs):
       if not self.pk and ImageCarousel.objects.exists():

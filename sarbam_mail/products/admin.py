@@ -9,9 +9,7 @@ from products.models import (
     Cart,
     CartProduct,
     ComboDeal,
-    ComboProducts,
     HotDeal,
-    HotDealProducts,
 )
 
 
@@ -82,29 +80,23 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
-class ComboProductsInline(admin.TabularInline):
-    model = ComboProducts
-    extra = 0
-    fields = ('product',)
-    can_delete = True
-
 
 @admin.register(ComboDeal)
 class ComboDealAdmin(admin.ModelAdmin):
     list_display = ('name', 'weight', 'original_price', 'discounted_price')
     list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
-    inlines = (ComboProductsInline,)
 
-
-class HotProductsInline(admin.TabularInline):
-    model = HotDealProducts
-    extra = 0
-    fields = ('product',)
-    can_delete = True
 
 
 @admin.register(HotDeal)
 class HotDealAdmin(admin.ModelAdmin):
     list_display = ('name', 'weight', 'original_price', 'discounted_price')
     list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
-    inlines = (HotProductsInline,)
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ('user', 'total_amount', 'address')
+    list_display_links = ('user', 'total_amount', 'address')
+
+    inlines = (CartProductInline,)

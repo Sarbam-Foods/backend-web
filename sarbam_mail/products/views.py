@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
+from accounts.models import User
+
 from mail_system.tasks import send_order_email_task
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -79,9 +81,17 @@ class AddProductToCartAPIView(generics.GenericAPIView):
       
       qty = int(request.query_params.get('qty', 1))
 
-      user = request.user
+      user_id = request.user.id
+      user = User.objects.get(id=user_id)
+      address = user.address
 
-      cart, created = Cart.objects.get_or_create(user=user, checked_out=False)
+      cart, created = Cart.objects.get_or_create(
+         user=user,
+         checked_out=False,
+      )
+
+      if created:
+         cart.address = address
 
       try:
          cart_product = CartProduct.objects.get(cart=cart, product=product, status="Pending")
@@ -99,8 +109,9 @@ class AddProductToCartAPIView(generics.GenericAPIView):
 
       return Response(
          {
-            'id': cart_product.id,
-            'message': "Product added to cart successfully!"
+            'id': cart_product.id, # type:ignore
+            'message': "Product added to cart successfully!",
+            'address': user.address
          },
          status=status.HTTP_201_CREATED
       )
@@ -110,19 +121,23 @@ class AddProductToCartAPIView(generics.GenericAPIView):
 # CART VIEW FOR A USER
 ######################
 
-class CartListAPIView(generics.ListAPIView):
-   serializer_class = CartSerializer
-   permission_classes = (IsAuthenticated,)
+class CartListAPIView(generics.GenericAPIView):
+    serializer_class = CartSerializer
+    permission_classes = (IsAuthenticated,)
 
-   def get_queryset(self):
-      user = self.request.user
+    def get(self, request, *args, **kwargs):
+        user = request.user
 
-      if user.is_authenticated and user.is_superuser:
-         return Cart.objects.filter(user=user, checked_out=False).select_related('user').prefetch_related('cart_items')
-      else:
-         return Cart.objects.none()
-      
+        try:
+            cart = Cart.objects.get(user=user, checked_out=False)
+        except Cart.DoesNotExist:
+            return Response(
+                {'message': "No Cart Found!"},
+                status=status.HTTP_204_NO_CONTENT
+            )
 
+        serializer = self.serializer_class(cart)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # CART AND CART ITEMS STATUS
@@ -132,7 +147,7 @@ class CancelCartProductAPIView(generics.GenericAPIView):
    permission_classes = (IsAuthenticated,)
    serializer_class = CartProductSerializer
 
-   def patch(self, request, product_id, *args, **kwargs):
+   def delete(self, request, product_id, *args, **kwargs):
       try:
          product = CartProduct.objects.select_related('cart').get(id = product_id)
       except CartProduct.DoesNotExist:
@@ -147,8 +162,7 @@ class CancelCartProductAPIView(generics.GenericAPIView):
             status=status.HTTP_401_UNAUTHORIZED
          )
       
-      product.status = "Cancelled"
-      product.save()
+      product.delete()
 
       return Response(
          {'message': "Cart Item cancelled successfully!"},
@@ -199,7 +213,7 @@ class PlaceOrderAPIView(generics.GenericAPIView):
                "price": float(item.price),
                "weight": item.product.weight
             }
-            for item in order.order_items.all()
+            for item in order.order_items.all() # type:ignore
          ]
 
          send_order_email_task.delay(
@@ -273,7 +287,7 @@ class UserOrdersAPIView(generics.GenericAPIView):
 
 
 class ComboDealsAPIView(generics.GenericAPIView):
-   queryset = ComboDeal.objects.prefetch_related('combo_deal').all()
+   queryset = ComboDeal.objects.all()
    permission_classes = (AllowAny,)
    serializer_class = ComboDealSerializer
 
@@ -285,7 +299,7 @@ class ComboDealsAPIView(generics.GenericAPIView):
    
 
 class HotDealsAPIView(generics.GenericAPIView):
-   queryset = HotDeal.objects.prefetch_related('combo_deal').all()
+   queryset = HotDeal.objects.all()
    permission_classes = (AllowAny,)
    serializer_class = HotDealSerializer
 

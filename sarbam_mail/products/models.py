@@ -6,7 +6,7 @@ from django.core.validators import FileExtensionValidator, MinValueValidator, Ma
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from accounts.models import User, Address
+from accounts.models import User, PromoCode
 
 
 # Create your models here.
@@ -59,7 +59,10 @@ class Order(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     total_amount = models.FloatField(validators=[MinValueValidator(0)])
     status = models.CharField(max_length=30, choices=ORDER_STATUS, default="PENDING")
-    address = models.ForeignKey(Address, null=True,  on_delete=models.CASCADE, related_name='order_address')
+    address = models.CharField(max_length=255, null=True, blank=True)
+    coupon_id = models.ForeignKey(PromoCode, null=True, on_delete=models.SET_NULL, related_name='promo_coupon')
+    is_coupon_applied = models.BooleanField(default=False)
+
 
     def __str__(self):
         return f"Order_{self.order_id}"
@@ -86,7 +89,7 @@ class Cart(BaseModel):
     cart_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart')
     total_amount = models.FloatField(validators=[MinValueValidator(0)], default=0)
-    address = models.ForeignKey(Address, null=True, blank=True, on_delete=models.CASCADE, related_name='cart_address')
+    address = models.CharField(max_length=255, null=True, blank=True)
     checked_out = models.BooleanField(default=False)
 
     def __str__(self):
@@ -98,7 +101,7 @@ class Cart(BaseModel):
 
 
     def update_total_amount(self):
-        self.total_amount = self.cart_items.filter(status="Pending").aggregate(
+        self.total_amount = self.cart_items.filter(status="Pending").aggregate( # type:ignore
             total = Sum('subtotal')
         )['total'] or 0.0
 
@@ -106,7 +109,7 @@ class Cart(BaseModel):
 
 
     def place_order(self):
-        pending_items = self.cart_items.filter(status="Pending")
+        pending_items = self.cart_items.filter(status="Pending") # type:ignore
 
         if not pending_items.exists():
             raise ValueError("No pending items in the cart to place an order.")
@@ -174,7 +177,7 @@ def update_cart_total_on_delete(sender, instance, **kwargs):
 
 
 class ComboDeal(models.Model):
-    combo_id = models.CharField(unique=True, primary_key=True, editable=False, max_length=20)
+    id = models.CharField(unique=True, primary_key=True, editable=False, max_length=20)
 
     name = models.CharField(max_length=125)
     photo = models.ImageField(upload_to='combo_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
@@ -188,13 +191,6 @@ class ComboDeal(models.Model):
     weight = models.FloatField(default=0, editable=False)
 
 
-    def calculate_price(self):
-        return sum(product.product.price for product in self.combo_deal.all())
-
-
-    def calculate_weight(self):
-        return sum(product.product.weight for product in self.combo_deal.all())
-
 
     def save(self, *args, **kwargs):
         if not self.combo_id:
@@ -205,9 +201,6 @@ class ComboDeal(models.Model):
                 self.combo_id = f"COMBO_{count:05d}"
             else:
                 self.combo_id = "COMBO_00001"
-
-        self.original_price = self.calculate_price()
-        self.weight = self.calculate_weight()
          
         self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
 
@@ -219,21 +212,9 @@ class ComboDeal(models.Model):
     
 
 
-class ComboProducts(models.Model):
-    combo_deal_id = models.ForeignKey(ComboDeal, on_delete=models.CASCADE, related_name='combo_deal')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='combo_product')
-
-    def __str__(self):
-        return f"{self.combo_deal_id}: {self.product}"
-    
-    class Meta:
-        verbose_name = "Product"
-        verbose_name_plural = "Combo Products"
-
-
 
 class HotDeal(models.Model):
-    hot_deal_id = models.CharField(max_length=125,unique=True, primary_key=True, editable=False)
+    id = models.CharField(max_length=125,unique=True, primary_key=True, editable=False)
 
     name = models.CharField(max_length=125)
     photo = models.ImageField(upload_to='hot_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
@@ -247,26 +228,15 @@ class HotDeal(models.Model):
     weight = models.FloatField(default=0, editable=False)
 
 
-    def calculate_price(self):
-        return sum(product.product.price for product in self.hot_deal.all())
-
-
-    def calculate_weight(self):
-        return sum(product.product.weight for product in self.hot_deal.all())
-
-
     def save(self, *args, **kwargs):
-        if not self.combo_id:
-            latest_combo = HotDeal.objects.order_by('-hot_deal_id').first()
+        if not self.hot_id:
+            latest_combo = HotDeal.objects.order_by('-hot_id').first()
             if latest_combo:
-                latest_id = int(latest_combo.combo_id.split('_')[1])
+                latest_id = int(latest_combo.hot_id.split('_')[1])
                 count = latest_id + 1
-                self.combo_id = f"HOT_{count:05d}"
+                self.hot_id = f"HOT_{count:05d}"
             else:
-                self.combo_id = "HOT_00001"
-
-        self.original_price = self.calculate_price()
-        self.weight = self.calculate_weight()
+                self.hot_id = "HOT_00001"
          
         self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
 
@@ -274,17 +244,5 @@ class HotDeal(models.Model):
     
 
     def __str__(self):
-        return self.combo_id
+        return self.hot_id
     
-
-
-class HotDealProducts(models.Model):
-    hot_deal_id = models.ForeignKey(HotDeal, on_delete=models.CASCADE, related_name='hot_deal')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='hot_product')
-
-    def __str__(self):
-        return f"{self.hot_deal_id}: {self.product}"
-    
-    class Meta:
-        verbose_name = "Product"
-        verbose_name_plural = "Hot Deal Products"

@@ -62,7 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
     phone_number = PhoneNumberField()
-
+    address = models.CharField(max_length=255, null=True, blank=True)
     promocode = models.ManyToManyField(PromoCode, null=True, blank=True, related_name='users')
 
     is_active = models.BooleanField(default=True)
@@ -97,12 +97,12 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     
 
 
-class Address(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='address')
-    province = models.CharField(max_length=55)
-    district = models.CharField(max_length=55)
-    municipality = models.CharField(max_length=155)
-    location = models.CharField(max_length=455, null=True, blank=True)
+# class Address(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='address')
+#     province = models.CharField(max_length=55)
+#     district = models.CharField(max_length=55)
+#     municipality = models.CharField(max_length=155)
+#     location = models.CharField(max_length=455, null=True, blank=True)
 
-    def __str__(self):
-        return f"{self.user.name}: {self.id}"
+#     def __str__(self):
+#         return f"{self.user.name}: {self.id}"
