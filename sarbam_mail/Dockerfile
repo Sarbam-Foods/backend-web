@@ -28,11 +28,6 @@ RUN python3 -m pip install -r requirements.txt
 # Copy the source code into the container.
 COPY . .
 
-RUN python3 manage.py makemigrations
-RUN python3 manage.py migrate
-RUN python3 manage.py collectstatic --noinput
-
-
 # Expose the port that the application listens on.
 EXPOSE 8000
 
