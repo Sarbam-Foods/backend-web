@@ -1,11 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
 FROM python:3.10-slim as base
 
 # Prevents Python from writing pyc files.
@@ -18,7 +12,6 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -29,20 +22,24 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
+# Grant the 'appuser' ownership of the /app directory.
+RUN chown -R appuser:appuser /app
 
 COPY requirements.txt .
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpq-dev gcc && \
     rm -rf /var/lib/apt/lists/*
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
 RUN python3 -m pip install --upgrade pip
 
+# Install Python dependencies
 RUN python3 -m pip install -r requirements.txt
+
+# Give 'appuser' permissions on the pip cache (if used)
+RUN chown -R appuser:appuser /root/.cache
 
 # Switch to the non-privileged user to run the application.
 USER appuser
