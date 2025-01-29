@@ -193,14 +193,14 @@ class ComboDeal(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if not self.combo_id:
-            latest_combo = ComboDeal.objects.order_by('-combo_id').first()
+        if not self.id:
+            latest_combo = ComboDeal.objects.order_by('-id').first()
             if latest_combo:
-                latest_id = int(latest_combo.combo_id.split('_')[1])
+                latest_id = int(latest_combo.id.split('_')[1])
                 count = latest_id + 1
-                self.combo_id = f"COMBO_{count:05d}"
+                self.id = f"COMBO_{count:05d}"
             else:
-                self.combo_id = "COMBO_00001"
+                self.id = "COMBO_00001"
          
         self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
 
@@ -208,7 +208,7 @@ class ComboDeal(models.Model):
     
 
     def __str__(self):
-        return self.combo_id
+        return self.id
     
 
 
@@ -229,14 +229,14 @@ class HotDeal(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if not self.hot_id:
-            latest_combo = HotDeal.objects.order_by('-hot_id').first()
+        if not self.id:
+            latest_combo = HotDeal.objects.order_by('-id').first()
             if latest_combo:
-                latest_id = int(latest_combo.hot_id.split('_')[1])
+                latest_id = int(latest_combo.id.split('_')[1])
                 count = latest_id + 1
-                self.hot_id = f"HOT_{count:05d}"
+                self.id = f"HOT_{count:05d}"
             else:
-                self.hot_id = "HOT_00001"
+                self.id = "HOT_00001"
          
         self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
 
@@ -244,5 +244,5 @@ class HotDeal(models.Model):
     
 
     def __str__(self):
-        return self.hot_id
+        return self.id
     

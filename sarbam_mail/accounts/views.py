@@ -108,7 +108,7 @@ class ChangePasswordAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ResetPasswordRequestAPIView(generics.GenericAPIView):
+class ResetPasswordRequestAPIView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
@@ -190,7 +190,7 @@ class ValidateOTPView(APIView):
 
 
 
-class ResetPasswordView(generics.GenericAPIView):
+class ResetPasswordView(APIView):
     def post(self, request, uid, token):
         
         pk = urlsafe_base64_decode(uid).decode()
@@ -257,6 +257,7 @@ class FetchUserView(APIView):
 
 class UpdateUserAPIView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = UpdateUserSerializer
 
     def patch(self, request, *args, **kwargs):
         try:
@@ -267,7 +268,7 @@ class UpdateUserAPIView(generics.GenericAPIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = UpdateUserSerializer(user, data=request.data, partial=True)                
+        serializer = self.serializer_class(user, data=request.data, partial=True)                
         if serializer.is_valid():
             serializer.save()
 

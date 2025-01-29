@@ -65,7 +65,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = Order
-      fields = ('order_id', 'total_amount', 'order_items', 'status', 'coupon_id', 'isCouponApplied', 'created_at')
+      fields = ('order_id', 'total_amount', 'order_items', 'status', 'coupon_id', 'is_coupon_applied', 'created_at')
 
 
 class ProductInComboSerializer(serializers.ModelSerializer):
@@ -80,7 +80,7 @@ class ComboDealSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = ComboDeal
-      fields = ('combo_id', 'name', 'photo', 'combo_deal', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
+      fields = ('id', 'name', 'photo', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
 
 
 
@@ -88,4 +88,4 @@ class HotDealSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = HotDeal
-      fields = ('hot_id', 'name', 'photo', 'hot_deal', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
+      fields = ('id', 'name', 'photo', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')

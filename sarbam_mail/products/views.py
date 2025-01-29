@@ -13,6 +13,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from products.models import (
    Category,
+   OrderItem,
    Product,
    CartProduct,
    Cart,
@@ -23,6 +24,7 @@ from products.models import (
 
 from products.serializers import (
    CategorySerializer,
+   OrderItemSerializer,
    ProductSerializer,
    CartProductSerializer,
    CartSerializer,
@@ -200,6 +202,7 @@ class DeleteCartAPIView(APIView):
 ############################
 class PlaceOrderAPIView(generics.GenericAPIView):
    permission_classes = (IsAuthenticated,)
+   serializer_class = OrderSerializer
 
    def post(self, request, *args, **kwargs):
       try:
@@ -225,7 +228,7 @@ class PlaceOrderAPIView(generics.GenericAPIView):
             items = order_items,
          )
 
-         serializer = OrderSerializer(order)
+         serializer = self.serializer_class(order)
 
          return Response(
                {
@@ -246,7 +249,7 @@ class PlaceOrderAPIView(generics.GenericAPIView):
 # ORDER AND ORDER ITEMS
 #################################
 
-class CancelOrderAPIView(generics.GenericAPIView):
+class CancelOrderAPIView(APIView):
    permission_classes = (IsAuthenticated,)
 
    def patch(self, request, order_id, *args, **kwargs):
@@ -269,19 +272,35 @@ class CancelOrderAPIView(generics.GenericAPIView):
       )
 
 
-class CancelOrderItemAPIView(generics.GenericAPIView):
+class CancelOrderItemAPIView(APIView):
    permission_classes = (IsAuthenticated,)
 
    def patch(self, request, order_item_id, *args, **kwargs):
-      pass
+      try:
+         order_item = OrderItem.objects.get(id=order_item_id)
+      except OrderItem.DoesNotExist:
+         return Response(
+            {'error': "Order Item doesn't exist!"},
+            status=status.HTTP_404_NOT_FOUND
+         )
+      
+      order_item.status = "Cancelled"
+      order_item.save()
+
+      return Response(
+         {'message': "Order Item Cancelled."},
+         status=status.HTTP_200_OK
+      )
+
 
 
 class UserOrdersAPIView(generics.GenericAPIView):
-   permission_classes = [IsAuthenticated]
+   permission_classes = (IsAuthenticated,)
+   serializer_class = OrderSerializer
 
    def get(self, request):
       orders = Order.objects.filter(user=request.user).select_related('user').order_by('-created_at')
-      serializer = OrderSerializer(orders, many=True)
+      serializer = self.serializer_class(orders, many=True)
       return Response(serializer.data, status=status.HTTP_200_OK)
    
 
