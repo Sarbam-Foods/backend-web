@@ -11,19 +11,6 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Create a non-privileged user that the app will run under.
-ARG UID=10001
-# RUN adduser \
-#     --disabled-password \
-#     --gecos "" \
-#     --home "/nonexistent" \
-#     --shell "/sbin/nologin" \
-#     --no-create-home \
-#     --uid "${UID}" \
-#     appuser
-
-# Grant the 'appuser' ownership of the /app directory.
-# RUN chown -R appuser:appuser /app
 
 COPY requirements.txt .
 
@@ -38,14 +25,13 @@ RUN python3 -m pip install --upgrade pip
 # Install Python dependencies
 RUN python3 -m pip install -r requirements.txt
 
-# Give 'appuser' permissions on the pip cache (if used)
-# RUN chown -R appuser:appuser /root/.cache
-
-# Switch to the non-privileged user to run the application.
-# USER appuser
-
 # Copy the source code into the container.
 COPY . .
+
+RUN python3 manage.py makemigrations
+RUN python3 manage.py migrate
+RUN python3 manage.py collectstatic --noinput
+
 
 # Expose the port that the application listens on.
 EXPOSE 8000
