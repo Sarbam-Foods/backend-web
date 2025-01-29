@@ -13,17 +13,17 @@ WORKDIR /app
 
 # Create a non-privileged user that the app will run under.
 ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser
+# RUN adduser \
+#     --disabled-password \
+#     --gecos "" \
+#     --home "/nonexistent" \
+#     --shell "/sbin/nologin" \
+#     --no-create-home \
+#     --uid "${UID}" \
+#     appuser
 
 # Grant the 'appuser' ownership of the /app directory.
-RUN chown -R appuser:appuser /app
+# RUN chown -R appuser:appuser /app
 
 COPY requirements.txt .
 
@@ -39,10 +39,10 @@ RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install -r requirements.txt
 
 # Give 'appuser' permissions on the pip cache (if used)
-RUN chown -R appuser:appuser /root/.cache
+# RUN chown -R appuser:appuser /root/.cache
 
 # Switch to the non-privileged user to run the application.
-USER appuser
+# USER appuser
 
 # Copy the source code into the container.
 COPY . .
