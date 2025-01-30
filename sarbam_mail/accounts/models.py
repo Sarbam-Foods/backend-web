@@ -1,5 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 from django.contrib.auth.models import (
    AbstractBaseUser,
    BaseUserManager,
@@ -53,7 +56,7 @@ class PromoCode(models.Model):
     discount = models.FloatField(validators=[MinValueValidator(0)])
 
     def __str__(self):
-        return f"{self.code}"
+        return f"{self.code}_{self.discount}"
 
 
 
@@ -63,7 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     name = models.CharField(max_length=255)
     phone_number = PhoneNumberField()
     address = models.CharField(max_length=255, null=True, blank=True)
-    promocode = models.ManyToManyField(PromoCode, null=True, blank=True, related_name='users')
+    promocode = models.ManyToManyField(PromoCode, blank=True, related_name='users')
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -74,7 +77,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ['name']
+    REQUIRED_FIELDS = ['name', 'address', 'phone_number']
 
     class Meta:
         verbose_name = "User"
@@ -84,8 +87,6 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
     def __str__(self):
         return f"{self.name}"
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs) 
 
     def has_perm(self, perm, obj=None):
         """Check if the user has a specific permission."""
@@ -95,6 +96,12 @@ class User(AbstractBaseUser, PermissionsMixin, BaseUserModel):
         """Check if the user has permissions to access the specified app."""
         return True
     
+
+@receiver(post_save, sender=User)
+def assign_default_promocode(sender, instance, created, **kwargs):
+    if created:
+        promocode, _ = PromoCode.objects.get_or_create(code="NEW_2025", discount=100)
+        instance.promocode.add(promocode)
 
 
 # class Address(models.Model):

@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
@@ -5,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from accounts.models import User
+from accounts.models import PromoCode, User
 
 from mail_system.tasks import send_order_email_task
 
@@ -342,3 +343,27 @@ class SamplePacksAPIView(generics.GenericAPIView):
       serializer = self.get_serializer(sample_packs, many=True)
 
       return Response(serializer.data, status=status.HTTP_200_OK)
+   
+
+class DeletePromoCodeFromUserAPIView(APIView):
+   permission_classes = (IsAuthenticated,)
+
+   def patch(self, *args, **kwargs):
+      user_id = kwargs.get('user_id')
+      promo_id = kwargs.get('promo_id')
+
+      user = get_object_or_404(User, id=user_id)
+      promo = get_object_or_404(PromoCode, id=promo_id)
+
+      if not user.promocode.filter(id=promo_id).exists():
+         return Response(
+            {'message': "Promo Code for the user not found or invalid."},
+            status=status.HTTP_400_BAD_REQUEST
+         )
+      
+      user.promocode.remove(promo)
+
+      return Response(
+         {'message': "Promocode of the user deleted successfully!"},
+         status=status.HTTP_204_NO_CONTENT
+      )

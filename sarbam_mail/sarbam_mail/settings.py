@@ -228,13 +228,20 @@ JAZZMIN_SETTINGS = {
     "site_title": "Sarbam Foods Administration",
     "site_header": "Sarbam Foods",
     "site_brand": "Sarbam Foods",
+
     "site_logo": "../media/logo/sarbam_logo.png",
-    "login_logo": "../media/logo/sarbam_logo.png",
+    "login_logo": "None",
+
+    "custom_css": "css/custom.css",
+    "custom_js": None,
+    
+    "site_logo_classes": "custom-logo",
     "login_logo_dark": None,
-    "site_logo_classes": "img-circle",
+    "site_logo_classes": "img-fluid",
     "site_icon": '../media/logo/sarbam_logo.png',
+    
     "welcome_sign": "Welcome to Sarbam Foods: Administration",
-    "copyright": "Riwaj Bhurtel, 2025",
+    "copyright": "Sarbam Foods, 2025",
 
     "user_avatar": None,
     
@@ -264,9 +271,6 @@ JAZZMIN_SETTINGS = {
 
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
-
-    "custom_css": None,
-    "custom_js": None,
 
     "use_google_fonts_cdn": True,
     "google_fonts_cdn_url": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",

@@ -33,7 +33,7 @@ class Product(BaseModel):
     name = models.CharField(max_length=255)
     photo = models.ImageField(
         upload_to='products/',
-        validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg'))],
+        validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg', 'jpeg'))],
         null=True, blank=True
     )
     description = models.TextField(null=True, blank=True)
@@ -188,9 +188,6 @@ class ComboDeal(models.Model):
 
     description = models.TextField(default="", blank=True)
 
-    weight = models.FloatField(default=0, editable=False)
-
-
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -225,7 +222,7 @@ class HotDeal(models.Model):
 
     description = models.TextField(default="", blank=True)
 
-    weight = models.FloatField(default=0, editable=False)
+    weight = models.FloatField(default=0, null=True, blank=True)
 
 
     class Meta:
@@ -264,7 +261,7 @@ class SamplePack(models.Model):
 
     description = models.TextField(default="", blank=True)
 
-    weight = models.FloatField(default=0, editable=False)
+    weight = models.FloatField(default=0, null=True, blank=True)
 
     class Meta:
         verbose_name = "Sample Pack"

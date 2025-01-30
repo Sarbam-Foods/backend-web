@@ -82,8 +82,8 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(ComboDeal)
 class ComboDealAdmin(admin.ModelAdmin):
-    list_display = ('name', 'weight', 'original_price', 'discounted_price')
-    list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
+    list_display = ('name', 'original_price', 'discounted_price')
+    list_display_links = ('name', 'original_price', 'discounted_price')
 
 
 
