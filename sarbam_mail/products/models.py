@@ -186,7 +186,7 @@ class ComboDeal(models.Model):
     discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     discounted_price = models.FloatField(null=True, blank=True, default=0)
 
-    description = models.CharField(max_length=200, blank=True, default="")
+    description = models.TextField(default="", blank=True)
 
     weight = models.FloatField(default=0, editable=False)
 
@@ -223,10 +223,14 @@ class HotDeal(models.Model):
     discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     discounted_price = models.FloatField(null=True, blank=True, default=0)
 
-    description = models.CharField(max_length=200, default="", blank=True)
+    description = models.TextField(default="", blank=True)
 
     weight = models.FloatField(default=0, editable=False)
 
+
+    class Meta:
+        verbose_name = "Hot Deal"
+        verbose_name_plural = "Hot Deals"
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -246,3 +250,40 @@ class HotDeal(models.Model):
     def __str__(self):
         return self.id
     
+
+
+class SamplePack(models.Model):
+    id = models.CharField(unique=True, primary_key=True, editable=False, max_length=20)
+
+    name = models.CharField(max_length=125)
+    photo = models.ImageField(upload_to='combo_deals/', null=True, blank=True, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png'])])
+
+    original_price = models.FloatField(null=True, blank=True, default=0)
+    discount_rate = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    discounted_price = models.FloatField(null=True, blank=True, default=0)
+
+    description = models.TextField(default="", blank=True)
+
+    weight = models.FloatField(default=0, editable=False)
+
+    class Meta:
+        verbose_name = "Sample Pack"
+        verbose_name_plural = "Sample Packs"
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            latest_combo = SamplePack.objects.order_by('-id').first()
+            if latest_combo:
+                latest_id = int(latest_combo.id.split('_')[1])
+                count = latest_id + 1
+                self.id = f"SAMPLE_{count:05d}"
+            else:
+                self.id = "SAMPLE_00001"
+         
+        self.discounted_price = self.original_price - (self.original_price * (self.discount_rate / 100)) # type: ignore
+
+        super().save(*args, **kwargs)
+    
+
+    def __str__(self):
+        return self.id

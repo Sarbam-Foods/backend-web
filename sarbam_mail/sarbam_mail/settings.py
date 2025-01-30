@@ -222,3 +222,88 @@ AUTH_USER_MODEL = 'accounts.User'
 SECURE_PROXY = config("SECURE_PROXY", cast=bool, default=False)
 if SECURE_PROXY:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Sarbam Foods Administration",
+    "site_header": "Sarbam Foods",
+    "site_brand": "Sarbam Foods",
+    "site_logo": "../media/logo/sarbam_logo.png",
+    "login_logo": "../media/logo/sarbam_logo.png",
+    "login_logo_dark": None,
+    "site_logo_classes": "img-circle",
+    "site_icon": '../media/logo/sarbam_logo.png',
+    "welcome_sign": "Welcome to Sarbam Foods: Administration",
+    "copyright": "Riwaj Bhurtel, 2025",
+
+    "user_avatar": None,
+    
+    "show_sidebar": True,
+
+    "navigation_expanded": True,
+
+    "hide_apps": ['django_celery_results', 'auth'],
+
+    "hide_models": [],
+
+
+    "icons": {
+        "accounts.user": "fas fa-user",
+        "accounts.PromoCode": "fa-brands fa-codepen",
+        "products.Category": "fa-solid fa-list",
+        "products.Product": "fa-solid fa-cookie-bite",
+        "products.Order": "fa-solid fa-cart-shopping",
+        "products.HotDeal": "fa-brands fa-hotjar",
+        "products.ComboDeal": "fa-solid fa-cubes-stacked",
+        "utility.About": "fa-solid fa-circle-info",
+        "utility.ImageCarousel": "fa-regular fa-images",
+        "utility.PromoAd": "fa-brands fa-adversal",
+        "utility.Utility": "fa-solid fa-seedling",
+        "products.SamplePack": "fa-solid fa-box",
+    },
+
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    "custom_css": None,
+    "custom_js": None,
+
+    "use_google_fonts_cdn": True,
+    "google_fonts_cdn_url": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap",
+    "font_family": "Roboto",
+
+    "show_ui_builder": False,
+}
+
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": True,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-info",
+    "navbar": "navbar-white navbar-light",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": True,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": True,
+    "theme": "flatly",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-outline-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-outline-info",
+        "warning": "btn-outline-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
+}

@@ -6,10 +6,9 @@ from products.models import (
     Product,
     Order,
     OrderItem,
-    Cart,
-    CartProduct,
     ComboDeal,
     HotDeal,
+    SamplePack,
 )
 
 
@@ -57,12 +56,12 @@ class ProductInline(admin.TabularInline):
     readonly_fields = ('name', 'price', 'qty', 'weight', 'photo')
 
 
-class CartProductInline(admin.TabularInline):
-    model = CartProduct
-    extra = 0
-    fields = ('product', 'qty', 'subtotal')
-    readonly_fields = ('product', 'qty', 'subtotal')
-    can_delete = False
+# class CartProductInline(admin.TabularInline):
+#     model = CartProduct
+#     extra = 0
+#     fields = ('product', 'qty', 'subtotal')
+#     readonly_fields = ('product', 'qty', 'subtotal')
+#     can_delete = False
 
 
 @admin.register(Category)
@@ -94,9 +93,15 @@ class HotDealAdmin(admin.ModelAdmin):
     list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
 
 
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ('user', 'total_amount', 'address')
-    list_display_links = ('user', 'total_amount', 'address')
+# @admin.register(Cart)
+# class CartAdmin(admin.ModelAdmin):
+#     list_display = ('user', 'total_amount', 'address')
+#     list_display_links = ('user', 'total_amount', 'address')
 
-    inlines = (CartProductInline,)
+#     inlines = (CartProductInline,)
+
+
+@admin.register(SamplePack)
+class SamplePackAdmin(admin.ModelAdmin):
+    list_display = ('name', 'weight', 'original_price', 'discounted_price')
+    list_display_links = ('name', 'weight', 'original_price', 'discounted_price')
