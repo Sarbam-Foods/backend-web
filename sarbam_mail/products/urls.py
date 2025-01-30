@@ -20,4 +20,5 @@ urlpatterns = [
 
    path('deals/combo/', views.ComboDealsAPIView.as_view(), name='combo_deals'),
    path('deals/hot/', views.HotDealsAPIView.as_view(), name='hot_deals'),
+   path('deals/sample/', views.SamplePacksAPIView.as_view(), name='sample_packs'),
 ]  

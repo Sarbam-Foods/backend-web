@@ -19,7 +19,8 @@ from products.models import (
    Cart,
    Order,
    ComboDeal,
-   HotDeal
+   HotDeal,
+   SamplePack
 )
 
 from products.serializers import (
@@ -31,6 +32,7 @@ from products.serializers import (
    OrderSerializer,
    ComboDealSerializer,
    HotDealSerializer,
+   SamplePackSerializer,
 )
 
 from django_filters import rest_framework as filters
@@ -325,5 +327,18 @@ class HotDealsAPIView(generics.GenericAPIView):
    def get(self, request, *args, **kwargs):
       hot_deals = self.get_queryset()
       serializer = self.get_serializer(hot_deals, many=True)
+
+      return Response(serializer.data, status=status.HTTP_200_OK)
+   
+
+
+class SamplePacksAPIView(generics.GenericAPIView):
+   queryset = SamplePack.objects.all()
+   permission_classes = (AllowAny,)
+   serializer_class = SamplePackSerializer
+
+   def get(self, request, *args, **kwargs):
+      sample_packs = self.get_queryset()
+      serializer = self.get_serializer(sample_packs, many=True)
 
       return Response(serializer.data, status=status.HTTP_200_OK)

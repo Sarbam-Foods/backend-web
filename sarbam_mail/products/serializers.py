@@ -9,6 +9,7 @@ from products.models import (
    OrderItem,
    ComboDeal,
    HotDeal,
+   SamplePack,
 )
 
 
@@ -88,4 +89,12 @@ class HotDealSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = HotDeal
+      fields = ('id', 'name', 'photo', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
+
+
+
+class SamplePackSerializer(serializers.ModelSerializer):
+
+   class Meta:
+      model = SamplePack
       fields = ('id', 'name', 'photo', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
