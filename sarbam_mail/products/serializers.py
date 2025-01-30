@@ -81,7 +81,7 @@ class ComboDealSerializer(serializers.ModelSerializer):
 
    class Meta:
       model = ComboDeal
-      fields = ('id', 'name', 'photo', 'original_price', 'discount_rate', 'discounted_price', 'description', 'weight')
+      fields = ('id', 'name', 'photo', 'original_price', 'discount_rate', 'discounted_price', 'description')
 
 
 
