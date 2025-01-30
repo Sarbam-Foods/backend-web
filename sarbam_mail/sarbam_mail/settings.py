@@ -219,3 +219,4 @@ CSRF_TRUSTED_ORIGINS = config(
 )
 
 AUTH_USER_MODEL = 'accounts.User'
+HTTP_X_FORWARDED_PROTO = config("SECURE_PROXY", cast=bool, default=False)
