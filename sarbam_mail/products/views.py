@@ -13,6 +13,9 @@ from mail_system.tasks import send_order_email_task
 from django_filters.rest_framework import DjangoFilterBackend
 
 from products.models import (
+   CartCombo,
+   CartHot,
+   CartSample,
    Category,
    OrderItem,
    Product,
@@ -122,6 +125,129 @@ class AddProductToCartAPIView(generics.GenericAPIView):
       )
 
 
+class AddDealsToCartAPIView(APIView):
+
+   def post(self, request, *args, **kwargs):
+      deal_type = kwargs.get('deal_type')
+      id = kwargs.get('id')
+
+      qty = int(request.query_params.get('qty', 1))
+
+      user_id = request.user.id
+      user = User.objects.get(id=user_id)
+      address = user.address
+
+      cart, created = Cart.objects.get_or_create(
+         user=user,
+         checked_out=False,
+      )
+
+      if created:
+         cart.address = address
+
+      if deal_type == 'combo':
+         try:
+            product = ComboDeal.objects.get(id=id)
+         except ComboDeal.DoesNotExist:
+            return Response(
+               {'error': "No Combo Deal occurs!"},
+               status = status.HTTP_404_NOT_FOUND
+            )
+
+         try:
+            cart_combo = CartCombo.objects.get(cart=cart, product=product, status="Pending")
+            cart_combo.qty += qty
+            print('Cart Fetched!')
+         
+         except CartCombo.DoesNotExist:
+            cart_product = CartCombo.objects.create(cart=cart, product=product, qty=qty)
+            print("Cart Created!")
+
+         cart_product.save()
+
+         cart.update_total_amount()
+         cart.save()
+
+         return Response(
+            {
+               'id': cart_product.id, # type:ignore
+               'message': "Product added to cart successfully!",
+               'address': user.address
+            },
+            status=status.HTTP_201_CREATED
+         )
+
+      elif deal_type == 'hot':
+         try:
+            product = HotDeal.objects.get(id=id)
+         except HotDeal.DoesNotExist:
+            return Response(
+               {'error': "No Hot Deal occurs!"},
+               status = status.HTTP_404_NOT_FOUND
+            )
+
+         try:
+            cart_combo = CartHot.objects.get(cart=cart, product=product, status="Pending")
+            cart_combo.qty += qty
+            print('Cart Fetched!')
+         
+         except CartHot.DoesNotExist:
+            cart_product = CartHot.objects.create(cart=cart, product=product, qty=qty)
+            print("Cart Created!")
+
+         cart_product.save()
+
+         cart.update_total_amount()
+         cart.save()
+
+         return Response(
+            {
+               'id': cart_product.id, # type:ignore
+               'message': "Product added to cart successfully!",
+               'address': user.address
+            },
+            status=status.HTTP_201_CREATED
+         )
+      
+      elif deal_type == 'sample':
+         try:
+            product = SamplePack.objects.get(id=id)
+         except SamplePack.DoesNotExist:
+            return Response(
+               {'error': "No Sample Deal occurs!"},
+               status = status.HTTP_404_NOT_FOUND
+            )
+
+         try:
+            cart_combo = CartSample.objects.get(cart=cart, product=product, status="Pending")
+            cart_combo.qty += qty
+            print('Cart Fetched!')
+         
+         except CartSample.DoesNotExist:
+            cart_product = CartSample.objects.create(cart=cart, product=product, qty=qty)
+            print("Cart Created!")
+
+         cart_product.save()
+
+         cart.update_total_amount()
+         cart.save()
+
+         return Response(
+            {
+               'id': cart_product.id, # type:ignore
+               'message': "Product added to cart successfully!",
+               'address': user.address
+            },
+            status=status.HTTP_201_CREATED
+         )
+      
+      else:
+         return Response(
+            {'error': "No matching query found!"},
+            status=status.HTTP_404_NOT_FOUND
+         )
+
+
 
 # CART VIEW FOR A USER
 ######################
@@ -212,6 +338,8 @@ class PlaceOrderAPIView(generics.GenericAPIView):
          cart = Cart.objects.get(user=request.user, checked_out=False)
          order = cart.place_order()
 
+         promo_code = request.query_params.get('promo_code')
+
          order_items = [
             {
                "name": item.product.name,
@@ -230,6 +358,22 @@ class PlaceOrderAPIView(generics.GenericAPIView):
             total_amount = float(order.total_amount),
             items = order_items,
          )
+
+         if promo_code:
+            user = request.user
+            promo = get_object_or_404(PromoCode, id=promo_code)
+
+            if not user.promocode.filter(id=promo_code).exists():
+               return Response(
+                  {'message': "Promo Code for the user not found or invalid."},
+                  status=status.HTTP_400_BAD_REQUEST
+               )
+            
+            user.promocode.remove(promo)
+
+            order.coupon_id = promo # type:ignore
+            order.is_coupon_applied = True
+            order.save()
 
          serializer = self.serializer_class(order)
 

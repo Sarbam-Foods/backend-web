@@ -9,11 +9,36 @@ from products.models import (
     ComboDeal,
     HotDeal,
     SamplePack,
+    OrderSample, 
+    OrderCombo,
+    OrderHot,
 )
 
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
+    extra = 0
+    fields = ('product', 'qty', 'price', 'status')
+    readonly_fields = ('product', 'qty', 'price')
+    can_delete = False
+
+
+class OrderComboInline(admin.TabularInline):
+    model = OrderCombo
+    extra = 0
+    fields = ('product', 'qty', 'price', 'status')
+    readonly_fields = ('product', 'qty', 'price')
+    can_delete = False
+
+class OrderHotInline(admin.TabularInline):
+    model = OrderHot
+    extra = 0
+    fields = ('product', 'qty', 'price', 'status')
+    readonly_fields = ('product', 'qty', 'price')
+    can_delete = False
+
+class OrderSampleInline(admin.TabularInline):
+    model = OrderSample
     extra = 0
     fields = ('product', 'qty', 'price', 'status')
     readonly_fields = ('product', 'qty', 'price')
@@ -27,7 +52,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_editable = ('status',)
     readonly_fields = ('order_id', 'user', 'total_amount', 'created_at')
     ordering = ('-created_at',)
-    inlines = (OrderItemInline,)
+    inlines = (OrderItemInline, OrderComboInline, OrderHotInline, OrderSampleInline)
 
     def status_colored(self, obj):
         """
@@ -64,6 +89,33 @@ class ProductInline(admin.TabularInline):
 #     can_delete = False
 
 
+# class CartComboInline(admin.TabularInline):
+#     model = CartCombo
+#     extra = 0
+#     fields = ('product', 'qty', 'subtotal')
+#     readonly_fields = ('product', 'qty', 'subtotal')
+#     can_delete = False
+
+
+
+# class CartHotInline(admin.TabularInline):
+#     model = CartHot
+#     extra = 0
+#     fields = ('product', 'qty', 'subtotal')
+#     readonly_fields = ('product', 'qty', 'subtotal')
+#     can_delete = False
+
+
+
+# class CartSampleInline(admin.TabularInline):
+#     model = CartSample
+#     extra = 0
+#     fields = ('product', 'qty', 'subtotal')
+#     readonly_fields = ('product', 'qty', 'subtotal')
+#     can_delete = False
+
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
    search_fields = ('Category',)
@@ -98,7 +150,7 @@ class HotDealAdmin(admin.ModelAdmin):
 #     list_display = ('user', 'total_amount', 'address')
 #     list_display_links = ('user', 'total_amount', 'address')
 
-#     inlines = (CartProductInline,)
+#     inlines = (CartProductInline, CartComboInline, CartHotInline, CartSampleInline)
 
 
 @admin.register(SamplePack)

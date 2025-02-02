@@ -30,10 +30,12 @@ class Category(models.Model):
 
 
 class Product(BaseModel):
+    id = models.CharField(unique=True, primary_key=True, editable=False, max_length=20)
+    
     name = models.CharField(max_length=255)
     photo = models.ImageField(
         upload_to='products/',
-        validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg', 'jpeg'))],
+        validators=[FileExtensionValidator(allowed_extensions=('png', 'jpg', 'jpeg' ))],
         null=True, blank=True
     )
     description = models.TextField(null=True, blank=True)
@@ -44,6 +46,19 @@ class Product(BaseModel):
 
     def __str__(self):
         return f"{self.name}_{self.category}"
+    
+    def save(self, *args, **kwargs):
+        if not self.id:
+            latest_product = Product.objects.order_by('-id').first()
+            if latest_product:
+                latest_id = int(latest_product.id.split('_')[1])
+                count = latest_id + 1
+                self.id = f"PRODUCT_{count:05d}"
+            else:
+                self.id = "PRODUCT_00001"
+         
+        super().save(*args, **kwargs)
+
 
 
 class Order(BaseModel):
@@ -60,7 +75,7 @@ class Order(BaseModel):
     total_amount = models.FloatField(validators=[MinValueValidator(0)])
     status = models.CharField(max_length=30, choices=ORDER_STATUS, default="PENDING")
     address = models.CharField(max_length=255, null=True, blank=True)
-    coupon_id = models.ForeignKey(PromoCode, null=True, on_delete=models.SET_NULL, related_name='promo_coupon')
+    coupon_id = models.ForeignKey(PromoCode, null=True, blank=True,  on_delete=models.SET_NULL, related_name='promo_coupon')
     is_coupon_applied = models.BooleanField(default=False)
 
 
@@ -97,45 +112,83 @@ class Cart(BaseModel):
 
 
     def save(self, *args, **kwargs):
+        self.update_total_amount()
         super().save(*args, **kwargs)
 
 
     def update_total_amount(self):
-        self.total_amount = self.cart_items.filter(status="Pending").aggregate( # type:ignore
-            total = Sum('subtotal')
-        )['total'] or 0.0
+        total = 0
+        
+        total += self.cart_items.filter(status="Pending").aggregate(total=Sum('subtotal'))['total'] or 0.0
+        total += self.cart_combo_items.filter(status="Pending").aggregate(total=Sum('subtotal'))['total'] or 0.0
+        total += self.cart_hot_items.filter(status="Pending").aggregate(total=Sum('subtotal'))['total'] or 0.0
+        total += self.cart_sample_items.filter(status="Pending").aggregate(total=Sum('subtotal'))['total'] or 0.0
 
-        self.save()
+        self.total_amount = total
 
 
     def place_order(self):
-        pending_items = self.cart_items.filter(status="Pending") # type:ignore
+        """Places an order, moving all cart items—including combo deals, hot deals, and sample packs—to the order and clearing the cart."""
 
-        if not pending_items.exists():
+        # Get all pending items from different categories
+        pending_items = list(self.cart_items.filter(status="Pending")) + \
+                        list(self.cart_combo_items.filter(status="Pending")) + \
+                        list(self.cart_hot_items.filter(status="Pending")) + \
+                        list(self.cart_sample_items.filter(status="Pending"))
+
+        if not pending_items:
             raise ValueError("No pending items in the cart to place an order.")
 
+        # Create a new order
         order = Order.objects.create(
             user=self.user,
             total_amount=self.total_amount,
-            address = self.address,
-            status = "Placed"
+            address=self.address,
+            status="Placed"
         )
 
-        for cart_product in pending_items:
-            OrderItem.objects.create(
-                order=order,
-                product=cart_product.product,
-                qty=cart_product.qty,
-                price=cart_product.subtotal
-            )
-            cart_product.status = "Placed"
-            cart_product.save()
+        # Move cart items to order items
+        for cart_item in pending_items:
+            if isinstance(cart_item, CartProduct):
+                OrderItem.objects.create(
+                    order=order,
+                    product=cart_item.product,
+                    qty=cart_item.qty,
+                    price=cart_item.subtotal
+                )
+            elif isinstance(cart_item, CartCombo):
+                OrderCombo.objects.create(
+                    order=order,
+                    product=cart_item.product,
+                    qty=cart_item.qty,
+                    price=cart_item.subtotal
+                )
+            elif isinstance(cart_item, CartHot):
+                OrderHot.objects.create(
+                    order=order,
+                    product=cart_item.product,
+                    qty=cart_item.qty,
+                    price=cart_item.subtotal
+                )
+            elif isinstance(cart_item, CartSample):
+                OrderSample.objects.create(
+                    order=order,
+                    product=cart_item.product,
+                    qty=cart_item.qty,
+                    price=cart_item.subtotal
+                )
 
+            # Mark cart item as placed
+            cart_item.status = "Placed"
+            cart_item.save()
+
+        # Mark cart as checked out and delete it
         self.checked_out = True
+        self.save()
         self.delete()
 
         return order
-
+    
 
 
 class CartProduct(BaseModel):
@@ -209,6 +262,34 @@ class ComboDeal(models.Model):
     
 
 
+class CartCombo(BaseModel):
+    PRODUCT_STATUS = (
+        ('Pending', "PENDING"),
+        ('Placed', "PLACED"),
+        ('Cancelled', "CANCELLED")
+    )
+
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_combo_items')
+    product = models.ForeignKey(ComboDeal, on_delete=models.CASCADE, related_name='cart_combo')
+    qty = models.IntegerField(validators=[MinValueValidator(0)])
+    subtotal = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
+
+    def __str__(self):
+        return f"{self.cart}: {self.product}"
+
+    def calculate_item_amount(self):
+        if not self.status == "Cancelled":
+            return self.product.discounted_price * self.qty # type:ignore
+        else:
+            return 0
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.calculate_item_amount()
+        super().save(*args, **kwargs)
+    
+
+
 
 class HotDeal(models.Model):
     id = models.CharField(max_length=125,unique=True, primary_key=True, editable=False)
@@ -248,6 +329,34 @@ class HotDeal(models.Model):
         return self.id
     
 
+class CartHot(BaseModel):
+    PRODUCT_STATUS = (
+        ('Pending', "PENDING"),
+        ('Placed', "PLACED"),
+        ('Cancelled', "CANCELLED")
+    )
+
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_hot_items')
+    product = models.ForeignKey(HotDeal, on_delete=models.CASCADE, related_name='cart_hot')
+    qty = models.IntegerField(validators=[MinValueValidator(0)])
+    subtotal = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
+
+    def __str__(self):
+        return f"{self.cart}: {self.product}"
+
+    def calculate_item_amount(self):
+        if not self.status == "Cancelled":
+            return self.product.discounted_price * self.qty # type:ignore
+        else:
+            return 0
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.calculate_item_amount()
+        super().save(*args, **kwargs)
+
+
+
 
 class SamplePack(models.Model):
     id = models.CharField(unique=True, primary_key=True, editable=False, max_length=20)
@@ -284,3 +393,86 @@ class SamplePack(models.Model):
 
     def __str__(self):
         return self.id
+    
+
+
+
+class CartSample(BaseModel):
+    PRODUCT_STATUS = (
+        ('Pending', "PENDING"),
+        ('Placed', "PLACED"),
+        ('Cancelled', "CANCELLED")
+    )
+
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_sample_items')
+    product = models.ForeignKey(SamplePack, on_delete=models.CASCADE, related_name='cart_sample')
+    qty = models.IntegerField(validators=[MinValueValidator(0)])
+    subtotal = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
+
+    def __str__(self):
+        return f"{self.cart}: {self.product}"
+
+    def calculate_item_amount(self):
+        if not self.status == "Cancelled":
+            return self.product.discounted_price * self.qty # type:ignore
+        else:
+            return 0
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.calculate_item_amount()
+        super().save(*args, **kwargs)
+    
+
+
+class OrderHot(BaseModel):
+    PRODUCT_STATUS = (
+        ('Pending', "PENDING"),
+        ('Placed', "PLACED"),
+        ('Cancelled', "CANCELLED")
+    )
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_hot_items')
+    product = models.ForeignKey(HotDeal, on_delete=models.CASCADE, related_name='order_hot')
+    qty = models.IntegerField(validators=[MinValueValidator(0)])
+    price = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
+
+    def __str__(self):
+        return f"{self.order}: {self.product}"
+
+
+
+class OrderCombo(BaseModel):
+    PRODUCT_STATUS = (
+        ('Pending', "PENDING"),
+        ('Placed', "PLACED"),
+        ('Cancelled', "CANCELLED")
+    )
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_combo_items')
+    product = models.ForeignKey(ComboDeal, on_delete=models.CASCADE, related_name='order_combo')
+    qty = models.IntegerField(validators=[MinValueValidator(0)])
+    price = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
+
+    def __str__(self):
+        return f"{self.order}: {self.product}"
+
+
+
+class OrderSample(BaseModel):
+    PRODUCT_STATUS = (
+        ('Pending', "PENDING"),
+        ('Placed', "PLACED"),
+        ('Cancelled', "CANCELLED")
+    )
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_sample_items')
+    product = models.ForeignKey(SamplePack, on_delete=models.CASCADE, related_name='order_sample')
+    qty = models.IntegerField(validators=[MinValueValidator(0)])
+    price = models.FloatField(default=0, validators=[MinValueValidator(0)])
+    status = models.CharField(choices=PRODUCT_STATUS, default="Pending", max_length=25)
+
+    def __str__(self):
+        return f"{self.order}: {self.product}"

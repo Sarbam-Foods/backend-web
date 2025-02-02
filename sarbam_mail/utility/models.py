@@ -11,6 +11,7 @@ class Utility(models.Model):
    whatsapp = models.URLField(null=True, blank=True)
    facebook = models.URLField(null=True, blank=True)
    instagram = models.URLField(null=True, blank=True)
+   tiktok = models.URLField(null=True, blank=True)
 
    def __str__(self):
       return "Website Information"
