@@ -112,8 +112,8 @@ class Cart(BaseModel):
 
 
     def save(self, *args, **kwargs):
-        self.update_total_amount()
         super().save(*args, **kwargs)
+        self.update_total_amount()
 
 
     def update_total_amount(self):

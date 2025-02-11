@@ -89,8 +89,7 @@ class AddProductToCartAPIView(generics.GenericAPIView):
       
       qty = int(request.query_params.get('qty', 1))
 
-      user_id = request.user.id
-      user = User.objects.get(id=user_id)
+      user = request.user
       address = user.address
 
       cart, created = Cart.objects.get_or_create(
@@ -100,6 +99,7 @@ class AddProductToCartAPIView(generics.GenericAPIView):
 
       if created:
          cart.address = address
+         cart.save()
 
       try:
          cart_product = CartProduct.objects.get(cart=cart, product=product, status="Pending")
